@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Smart Study Scheduler",
+    "slug": "smart-study-scheduler",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.smartstudyscheduler.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.smartstudyscheduler.app"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "sdkVersion": "54.0.0",
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}
