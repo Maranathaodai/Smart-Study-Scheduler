@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '../lib/types';
-import { dummyUser } from '../lib/dummy-data';
+import { supabase } from '../lib/supabase';
+// Removed dummy data imports
 
 interface UserContextType {
   user: User;
@@ -21,7 +22,24 @@ export const useUser = () => {
 };
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User>(dummyUser);
+  const [user, setUser] = useState<User>({
+    id: '',
+    name: '',
+    email: '',
+    bio: '',
+    avatar: '',
+    university: '',
+    major: '',
+    year: '',
+    preferences: {
+      darkMode: false,
+      notifications: true,
+      maxSlidesPerSession: 15,
+      studyDays: [1, 2, 3, 4, 5],
+      scheduleStartDate: new Date().toISOString(),
+      scheduleEndDate: new Date(Date.now() + 21 * 86400000).toISOString(),
+    },
+  });
 
   useEffect(() => {
     loadUserData();
@@ -44,6 +62,25 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
       await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
+      
+      // Also update Supabase user metadata
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        const { error } = await supabase.auth.updateUser({
+          data: {
+            full_name: userData.name || user.name,
+            bio: userData.bio || user.bio,
+            university: userData.university || user.university,
+            major: userData.major || user.major,
+            year: userData.year || user.year,
+            avatar_url: userData.avatar || user.avatar,
+          }
+        });
+        
+        if (error) {
+          console.error('Error updating Supabase user metadata:', error);
+        }
+      }
     } catch (error) {
       console.log('Error saving user data:', error);
     }
@@ -51,8 +88,27 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const resetUser = async () => {
     try {
-      setUser(dummyUser);
-      await AsyncStorage.setItem('userData', JSON.stringify(dummyUser));
+      // Reset to default user state
+      const defaultUser = {
+        id: '',
+        name: '',
+        email: '',
+        bio: '',
+        avatar: '',
+        university: '',
+        major: '',
+        year: '',
+        preferences: {
+          darkMode: false,
+          notifications: true,
+          maxSlidesPerSession: 15,
+          studyDays: [1, 2, 3, 4, 5],
+          scheduleStartDate: new Date().toISOString(),
+          scheduleEndDate: new Date(Date.now() + 21 * 86400000).toISOString(),
+        },
+      };
+      setUser(defaultUser);
+      await AsyncStorage.setItem('userData', JSON.stringify(defaultUser));
     } catch (error) {
       console.log('Error resetting user data:', error);
     }
@@ -61,7 +117,26 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearStoredUserData = async () => {
     try {
       await AsyncStorage.removeItem('userData');
-      setUser(dummyUser);
+      // Reset to default user state
+      const defaultUser = {
+        id: '',
+        name: '',
+        email: '',
+        bio: '',
+        avatar: '',
+        university: '',
+        major: '',
+        year: '',
+        preferences: {
+          darkMode: false,
+          notifications: true,
+          maxSlidesPerSession: 15,
+          studyDays: [1, 2, 3, 4, 5],
+          scheduleStartDate: new Date().toISOString(),
+          scheduleEndDate: new Date(Date.now() + 21 * 86400000).toISOString(),
+        },
+      };
+      setUser(defaultUser);
     } catch (error) {
       console.log('Error clearing user data:', error);
     }

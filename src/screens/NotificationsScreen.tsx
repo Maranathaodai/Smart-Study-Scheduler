@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function NotificationsScreen({ navigation }: any) {
   const { colors } = useTheme();
@@ -26,14 +27,42 @@ export default function NotificationsScreen({ navigation }: any) {
     pushNotifications: true,
   });
 
-  const handleToggle = (key: string) => {
-    setNotifications(prev => ({
-      ...prev,
-      [key]: !prev[key as keyof typeof prev]
-    }));
+  // Load notification settings on component mount
+  useEffect(() => {
+    loadNotificationSettings();
+  }, []);
+
+  const loadNotificationSettings = async () => {
+    try {
+      const savedSettings = await AsyncStorage.getItem('notificationSettings');
+      if (savedSettings) {
+        const parsedSettings = JSON.parse(savedSettings);
+        setNotifications(parsedSettings);
+      }
+    } catch (error) {
+      console.error('Error loading notification settings:', error);
+    }
   };
 
-  const handleSaveSettings = () => {
+  const saveNotificationSettings = async (settings: typeof notifications) => {
+    try {
+      await AsyncStorage.setItem('notificationSettings', JSON.stringify(settings));
+    } catch (error) {
+      console.error('Error saving notification settings:', error);
+    }
+  };
+
+  const handleToggle = async (key: string) => {
+    const newSettings = {
+      ...notifications,
+      [key]: !notifications[key as keyof typeof notifications]
+    };
+    setNotifications(newSettings);
+    await saveNotificationSettings(newSettings);
+  };
+
+  const handleSaveSettings = async () => {
+    await saveNotificationSettings(notifications);
     Alert.alert('Success', 'Notification settings saved!');
   };
 

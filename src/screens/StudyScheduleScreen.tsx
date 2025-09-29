@@ -156,7 +156,7 @@ export default function StudyScheduleScreen() {
               <View style={styles.progressHeader}>
                 <Text style={[styles.progressLabel, { color: colors.text }]}>Overall Progress</Text>
                 <Text style={[styles.progressPercentage, { color: course?.color || '#007AFF' }]}>
-                  {Math.round((completedSlides / totalSlides) * 100)}%
+                  {totalSlides > 0 ? Math.round((completedSlides / totalSlides) * 100) : 0}%
                 </Text>
               </View>
               <ProgressBar
@@ -190,7 +190,7 @@ export default function StudyScheduleScreen() {
                   <Ionicons name="trending-up" size={20} color={course?.color || '#007AFF'} />
                 </View>
                 <Text style={[styles.statValue, { color: colors.text }]}>
-                  {Math.round((completedSlides / totalSlides) * 100)}%
+                  {totalSlides > 0 ? Math.round((completedSlides / totalSlides) * 100) : 0}%
                 </Text>
                 <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Progress</Text>
               </View>

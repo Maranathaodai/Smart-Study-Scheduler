@@ -22,6 +22,8 @@ interface InputProps {
   disabled?: boolean;
   style?: ViewStyle;
   inputStyle?: TextStyle;
+  keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad' | 'number-pad' | 'decimal-pad';
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
 }
 
 export function Input({
@@ -36,6 +38,8 @@ export function Input({
   disabled = false,
   style,
   inputStyle,
+  keyboardType = 'default',
+  autoCapitalize = 'sentences',
 }: InputProps) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
@@ -63,6 +67,8 @@ export function Input({
           numberOfLines={numberOfLines}
           editable={!disabled}
           placeholderTextColor="#8E8E93"
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
         />
         {secureTextEntry && (
           <TouchableOpacity

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,16 +8,20 @@ import {
   Switch,
   Alert,
 } from 'react-native';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/SupabaseAuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function PrivacySecurityScreen({ navigation }: any) {
   const { colors } = useTheme();
+  const { user, updatePassword } = useAuth();
   const [securitySettings, setSecuritySettings] = useState({
-    biometricAuth: true,
+    biometricAuth: false,
     autoLock: true,
     dataEncryption: true,
     analyticsTracking: false,
@@ -25,18 +29,145 @@ export default function PrivacySecurityScreen({ navigation }: any) {
     locationTracking: false,
   });
 
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricType, setBiometricType] = useState<string>('');
+
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleToggle = (key: string) => {
-    setSecuritySettings(prev => ({
-      ...prev,
-      [key]: !prev[key as keyof typeof prev]
-    }));
+  // Check biometric availability on component mount
+  useEffect(() => {
+    checkBiometricAvailability();
+    loadSecuritySettings();
+  }, []);
+
+  const checkBiometricAvailability = async () => {
+    try {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      
+      console.log('Biometric check:', { hasHardware, isEnrolled, supportedTypes });
+      
+      if (hasHardware && isEnrolled) {
+        setBiometricAvailable(true);
+        
+        // Determine biometric type
+        if (supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+          setBiometricType('Face ID');
+        } else if (supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+          setBiometricType('Touch ID');
+        } else if (supportedTypes.includes(LocalAuthentication.AuthenticationType.IRIS)) {
+          setBiometricType('Iris');
+        } else {
+          setBiometricType('Biometric');
+        }
+      } else {
+        setBiometricAvailable(false);
+        setBiometricType('');
+      }
+    } catch (error) {
+      console.error('Error checking biometric availability:', error);
+      setBiometricAvailable(false);
+    }
   };
 
-  const handleChangePassword = () => {
+  const loadSecuritySettings = async () => {
+    try {
+      const savedSettings = await AsyncStorage.getItem('securitySettings');
+      if (savedSettings) {
+        const parsed = JSON.parse(savedSettings);
+        setSecuritySettings(prev => ({ ...prev, ...parsed }));
+      }
+    } catch (error) {
+      console.error('Error loading security settings:', error);
+    }
+  };
+
+  const saveSecuritySettings = async (newSettings: typeof securitySettings) => {
+    try {
+      await AsyncStorage.setItem('securitySettings', JSON.stringify(newSettings));
+    } catch (error) {
+      console.error('Error saving security settings:', error);
+    }
+  };
+
+  const handleToggle = async (key: string) => {
+    if (key === 'biometricAuth') {
+      if (!biometricAvailable) {
+        Alert.alert(
+          'Biometric Authentication Not Available',
+          `${biometricType || 'Biometric authentication'} is not available on this device or not set up. Please check your device settings.`,
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      // If enabling biometric auth, authenticate first
+      if (!securitySettings.biometricAuth) {
+        try {
+          const result = await LocalAuthentication.authenticateAsync({
+            promptMessage: `Enable ${biometricType || 'Biometric'} Authentication`,
+            cancelLabel: 'Cancel',
+            disableDeviceFallback: false,
+          });
+
+          if (result.success) {
+            const newSettings = {
+              ...securitySettings,
+              [key]: !securitySettings[key as keyof typeof securitySettings]
+            };
+            setSecuritySettings(newSettings);
+            await saveSecuritySettings(newSettings);
+            
+            Alert.alert(
+              'Success',
+              `${biometricType || 'Biometric'} authentication has been enabled!`,
+              [{ text: 'OK' }]
+            );
+          } else {
+            Alert.alert(
+              'Authentication Failed',
+              'Biometric authentication was not successful. Please try again.',
+              [{ text: 'OK' }]
+            );
+          }
+        } catch (error) {
+          console.error('Biometric authentication error:', error);
+          Alert.alert(
+            'Error',
+            'Failed to authenticate. Please try again.',
+            [{ text: 'OK' }]
+          );
+        }
+      } else {
+        // If disabling biometric auth, just toggle it
+        const newSettings = {
+          ...securitySettings,
+          [key]: !securitySettings[key as keyof typeof securitySettings]
+        };
+        setSecuritySettings(newSettings);
+        await saveSecuritySettings(newSettings);
+        
+        Alert.alert(
+          'Biometric Authentication Disabled',
+          `${biometricType || 'Biometric'} authentication has been disabled.`,
+          [{ text: 'OK' }]
+        );
+      }
+    } else {
+      // For other settings, just toggle normally
+      const newSettings = {
+        ...securitySettings,
+        [key]: !securitySettings[key as keyof typeof securitySettings]
+      };
+      setSecuritySettings(newSettings);
+      await saveSecuritySettings(newSettings);
+    }
+  };
+
+  const handleChangePassword = async () => {
     if (!password || !newPassword || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all password fields');
       return;
@@ -49,13 +180,48 @@ export default function PrivacySecurityScreen({ navigation }: any) {
       Alert.alert('Error', 'Password must be at least 8 characters long');
       return;
     }
-    Alert.alert('Success', 'Password changed successfully!');
-    setPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+    
+    try {
+      await updatePassword(newPassword);
+      Alert.alert('Success', 'Password changed successfully!');
+      setPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      Alert.alert('Error', `Failed to change password: ${error.message}`);
+    }
   };
 
-  const handleExportData = () => {
+  // Function to authenticate with biometrics (can be used by other parts of the app)
+  const authenticateWithBiometrics = async (): Promise<boolean> => {
+    if (!biometricAvailable || !securitySettings.biometricAuth) {
+      return false;
+    }
+
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: `${biometricType || 'Biometric'} Authentication`,
+        cancelLabel: 'Cancel',
+        disableDeviceFallback: false,
+      });
+
+      return result.success;
+    } catch (error) {
+      console.error('Biometric authentication error:', error);
+      return false;
+    }
+  };
+
+  const handleExportData = async () => {
+    // If biometric auth is enabled, authenticate first
+    if (securitySettings.biometricAuth && biometricAvailable) {
+      const authenticated = await authenticateWithBiometrics();
+      if (!authenticated) {
+        Alert.alert('Authentication Required', 'Biometric authentication is required to export data.');
+        return;
+      }
+    }
+
     Alert.alert(
       'Export Data',
       'Your data will be exported as a JSON file. This may take a few moments.',
@@ -84,8 +250,12 @@ export default function PrivacySecurityScreen({ navigation }: any) {
         {
           key: 'biometricAuth',
           title: 'Biometric Authentication',
-          description: 'Use fingerprint or face recognition',
-          icon: 'finger-print-outline',
+          description: biometricAvailable 
+            ? `Use ${biometricType || 'biometric authentication'} for secure login`
+            : 'Biometric authentication not available on this device',
+          icon: biometricType === 'Face ID' ? 'face-recognition-outline' : 
+                biometricType === 'Touch ID' ? 'finger-print-outline' : 
+                'shield-checkmark-outline',
         },
         {
           key: 'autoLock',
@@ -172,6 +342,7 @@ export default function PrivacySecurityScreen({ navigation }: any) {
                     onValueChange={() => handleToggle(item.key)}
                     trackColor={{ false: '#D1D1D6', true: '#007AFF' }}
                     thumbColor={securitySettings[item.key as keyof typeof securitySettings] ? '#FFFFFF' : '#FFFFFF'}
+                    disabled={item.key === 'biometricAuth' && !biometricAvailable}
                   />
                 </View>
               ))}
@@ -234,7 +405,7 @@ export default function PrivacySecurityScreen({ navigation }: any) {
         </Card>
 
         {/* Danger Zone */}
-        <Card style={[styles.card, styles.dangerCard]}>
+        <Card style={{...styles.card, ...styles.dangerCard}}>
           <CardHeader>
             <CardTitle style={styles.dangerTitle}>Danger Zone</CardTitle>
           </CardHeader>

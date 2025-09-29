@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,40 @@ import {
   Alert,
 } from 'react-native';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { dummySessions, dummyCourses } from '../lib/dummy-data';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { useProgress } from '../contexts/ProgressContext';
+import { courseStorage } from '../lib/courseStorage';
+import { Course, StudySession } from '../lib/types';
 
 export default function CalendarScreen() {
   const { colors } = useTheme();
+  const { studyStatistics, overallProgress } = useProgress();
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load courses and sessions on component mount
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [loadedCourses, loadedSessions] = await Promise.all([
+        courseStorage.loadCourses(),
+        courseStorage.loadStudySessions()
+      ]);
+      setCourses(loadedCourses);
+      setSessions(loadedSessions);
+    } catch (error) {
+      console.error('Error loading calendar data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -40,23 +67,35 @@ export default function CalendarScreen() {
   };
 
   const getSessionsForDate = (date: Date) => {
-    return dummySessions.filter(session => {
-      const sessionDate = new Date(session.date);
-      return sessionDate.toDateString() === date.toDateString();
+    const dateStr = date.toISOString().split('T')[0];
+    return sessions.filter(session => {
+      const sessionDate = new Date(session.date).toISOString().split('T')[0];
+      return sessionDate === dateStr;
     });
   };
 
   const getCoursesForDate = (date: Date) => {
-    const sessions = getSessionsForDate(date);
-    return sessions.map(session => {
-      const course = dummyCourses.find(c => c.id === session.courseId);
-      return course;
-    }).filter(Boolean);
+    const dateSessions = getSessionsForDate(date);
+    const courseIds = [...new Set(dateSessions.map(session => session.courseId))];
+    return courses.filter(course => courseIds.includes(course.id));
   };
 
   const getUniqueColorsForDate = (date: Date) => {
     const courses = getCoursesForDate(date);
     return [...new Set(courses.map(course => course?.color))];
+  };
+
+  const getMultiColorBackground = (colors: string[]) => {
+    if (colors.length === 0) return {};
+    if (colors.length === 1) return { backgroundColor: colors[0] + '20' };
+    
+    // For multiple colors, create a gradient-like effect
+    return {
+      backgroundColor: '#F0F0F0',
+      borderWidth: 2,
+      borderColor: colors[0],
+      borderStyle: 'solid' as const,
+    };
   };
 
   const formatDate = (date: Date) => {
@@ -116,8 +155,7 @@ export default function CalendarScreen() {
                   >
                     <View style={[
                       styles.dateContainer,
-                      dayColors.length === 1 && { backgroundColor: dayColors[0] + '20' },
-                      dayColors.length > 1 && styles.multiColorBackground,
+                      getMultiColorBackground(dayColors),
                     ]}>
                       <Text
                         style={[
@@ -125,10 +163,20 @@ export default function CalendarScreen() {
                           isToday && styles.todayText,
                           isSelected && styles.selectedText,
                           dayColors.length === 1 && { color: dayColors[0] },
+                          dayColors.length > 1 && { color: dayColors[0], fontWeight: 'bold' },
                         ]}
                       >
                         {day.getDate()}
                       </Text>
+                      {dayColors.length > 1 && (
+                        <View style={styles.multiColorIndicator}>
+                          <View style={[styles.colorDot, { backgroundColor: dayColors[0] }]} />
+                          <View style={[styles.colorDot, { backgroundColor: dayColors[1] }]} />
+                          {dayColors.length > 2 && (
+                            <View style={[styles.colorDot, { backgroundColor: '#8E8E93' }]} />
+                          )}
+                        </View>
+                      )}
                     </View>
                   </TouchableOpacity>
                 );
@@ -150,13 +198,13 @@ export default function CalendarScreen() {
           <CardContent>
             {todaySessions.length > 0 ? (
               todaySessions.map((session, index) => {
-                const course = dummyCourses.find(c => c.id === session.courseId);
+                const course = courses.find(c => c.id === session.courseId);
                 return (
                   <View key={session.id} style={styles.sessionItem}>
                     <View style={[styles.sessionColorBar, { backgroundColor: course?.color || '#8E8E93' }]} />
                     <View style={styles.sessionInfo}>
                       <Text style={[styles.sessionTitle, { color: colors.text }]}>
-                        {course?.name}
+                        {course?.name || 'Unknown Course'}
                       </Text>
                       <Text style={[styles.sessionDetails, { color: colors.textSecondary }]}>
                         {session.slides} slides • {session.completed ? 'Completed' : 'Pending'}
@@ -183,67 +231,54 @@ export default function CalendarScreen() {
           </CardContent>
         </Card>
 
-        {/* Course Legend */}
-        <Card style={styles.legendCard}>
-          <CardHeader>
-            <CardTitle>Course Colors</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <View style={styles.legendGrid}>
-              {dummyCourses.map((course) => (
-                <View key={course.id} style={styles.legendItem}>
-                  <View style={[styles.legendColor, { backgroundColor: course.color }]} />
-                  <Text style={[styles.legendText, { color: colors.text }]}>{course.name}</Text>
-                </View>
-              ))}
-            </View>
-          </CardContent>
-        </Card>
+        {/* Course Legend - Show if user has courses */}
+        {courses.length > 0 && (
+          <Card style={styles.legendCard}>
+            <CardHeader>
+              <CardTitle>Course Colors</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <View style={styles.legendGrid}>
+                {courses.map((course) => (
+                  <View key={course.id} style={styles.legendItem}>
+                    <View style={[styles.legendColor, { backgroundColor: course.color }]} />
+                    <Text style={[styles.legendText, { color: colors.text }]}>{course.name}</Text>
+                  </View>
+                ))}
+              </View>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Study Statistics */}
+        {/* Study Statistics - Show real user data */}
         <Card style={styles.statsCard}>
           <CardHeader>
             <CardTitle>This Month's Progress</CardTitle>
           </CardHeader>
           <CardContent>
-            <View style={styles.statsGrid}>
-              <TouchableOpacity 
-                style={styles.statItem}
-                onPress={() => Alert.alert(
-                  'Sessions Completed',
-                  'You\'ve completed 12 study sessions this month! This includes both individual course sessions and combined study periods. Great job staying consistent!',
-                  [{ text: 'Keep it up!', style: 'default' }]
-                )}
-              >
-                <Text style={[styles.statValue, { color: colors.text }]}>12</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Sessions Completed</Text>
-                <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} style={styles.infoIcon} />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.statItem}
-                onPress={() => Alert.alert(
-                  'Slides Studied',
-                  'You\'ve studied 156 slides this month! This represents all the content you\'ve covered across all your courses. Each slide brings you closer to mastery!',
-                  [{ text: 'Amazing!', style: 'default' }]
-                )}
-              >
-                <Text style={[styles.statValue, { color: colors.text }]}>156</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Slides Studied</Text>
-                <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} style={styles.infoIcon} />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.statItem}
-                onPress={() => Alert.alert(
-                  'Hours Studied',
-                  'You\'ve spent 8.5 hours studying this month! This is calculated based on your average study time per session. Consistent daily study is key to success!',
-                  [{ text: 'Excellent!', style: 'default' }]
-                )}
-              >
-                <Text style={[styles.statValue, { color: colors.text }]}>8.5</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Hours Studied</Text>
-                <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} style={styles.infoIcon} />
-              </TouchableOpacity>
-            </View>
+            {studyStatistics.currentStreak > 0 || studyStatistics.totalHoursStudied > 0 || courses.length > 0 ? (
+              <View style={styles.statsGrid}>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: colors.text }]}>{studyStatistics.currentStreak}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Day Streak</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: colors.text }]}>{studyStatistics.totalHoursStudied}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Hours Studied</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: colors.text }]}>{courses.length}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Courses</Text>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Ionicons name="bar-chart-outline" size={48} color={colors.textSecondary} />
+                <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
+                  No study data yet. Add courses and start studying to see your progress!
+                </Text>
+              </View>
+            )}
           </CardContent>
         </Card>
       </ScrollView>
@@ -333,6 +368,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F0F0',
     borderWidth: 1,
     borderColor: '#E0E0E0',
+  },
+  multiColorIndicator: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    flexDirection: 'row',
+    gap: 1,
+  },
+  colorDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
   },
   sessionsCard: {
     marginBottom: 16,
@@ -433,5 +480,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8E8E93',
     textAlign: 'center',
+  },
+  noDataContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  noDataText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 12,
+    lineHeight: 24,
   },
 });

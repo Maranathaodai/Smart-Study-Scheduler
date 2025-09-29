@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chunk Adjustment Screen - Low Fidelity Wireframe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .phone-frame {
+            width: 300px;
+            height: 600px;
+            background: #000;
+            border-radius: 30px;
+            padding: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 25px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .status-bar {
+            height: 30px;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 12px;
+            font-weight: bold;
+            border-bottom: 2px dashed #ccc;
+        }
+        
+        .header {
+            height: 50px;
+            background: #f0f0f0;
+            border-bottom: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: #333;
+            position: relative;
+        }
+        
+        .back-button {
+            position: absolute;
+            left: 20px;
+            width: 30px;
+            height: 30px;
+            background: #f0f0f0;
+            border: 2px dashed #333;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+        }
+        
+        .page-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            border: 2px dashed #333;
+            padding: 10px 15px;
+        }
+        
+        .card {
+            background: #fff;
+            border: 3px dashed #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            border: 2px dashed #333;
+            padding: 8px 12px;
+        }
+        
+        .chunk-item {
+            background: #fff;
+            border: 3px dashed #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .chunk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .chunk-number {
+            background: #333;
+            color: #fff;
+            width: 30px;
+            height: 30px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .chunk-duration {
+            font-size: 14px;
+            color: #666;
+            font-weight: bold;
+            background: #f0f0f0;
+            padding: 5px 10px;
+            border: 2px dashed #666;
+            border-radius: 4px;
+        }
+        
+        .chunk-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            border: 2px dashed #333;
+            padding: 8px 12px;
+        }
+        
+        .chunk-description {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+            border: 2px dashed #666;
+            padding: 10px;
+        }
+        
+        .adjustment-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        
+        .control-label {
+            font-size: 14px;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .control-buttons {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .control-button {
+            width: 30px;
+            height: 30px;
+            background: #f0f0f0;
+            border: 2px dashed #333;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .control-value {
+            font-size: 16px;
+            color: #333;
+            font-weight: bold;
+            background: #f0f0f0;
+            padding: 5px 10px;
+            border: 2px dashed #333;
+            border-radius: 4px;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .button {
+            background: #fff;
+            color: #333;
+            padding: 15px;
+            border: 3px dashed #333;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px 0;
+            width: 100%;
+        }
+        
+        .button.primary {
+            border: 3px dashed #000;
+            background: #000;
+            color: #fff;
+        }
+        
+        .button.secondary {
+            border: 3px dashed #666;
+            color: #666;
+        }
+        
+        .summary-card {
+            background: #f0f0f0;
+            border: 3px dashed #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 2px dashed #ccc;
+        }
+        
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+        
+        .summary-label {
+            font-size: 14px;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .summary-value {
+            font-size: 14px;
+            color: #666;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="screen">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>100%</span>
+            </div>
+            
+            <div class="header">
+                <div class="back-button">←</div>
+                <span>Adjust Study Chunks</span>
+            </div>
+            
+            <div class="content">
+                <h1 class="page-title">Mathematics - Calculus</h1>
+                
+                <div class="summary-card">
+                    <h3 class="card-title">Session Summary</h3>
+                    <div class="summary-item">
+                        <span class="summary-label">Total Slides</span>
+                        <span class="summary-value">100</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Current Chunks</span>
+                        <span class="summary-value">4</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Total Duration</span>
+                        <span class="summary-value">2h 30m</span>
+                    </div>
+                </div>
+                
+                <div class="chunk-item">
+                    <div class="chunk-header">
+                        <div class="chunk-number">1</div>
+                        <span class="chunk-duration">25 min</span>
+                    </div>
+                    <h3 class="chunk-title">Introduction to Derivatives</h3>
+                    <div class="chunk-description">Basic concepts and definitions</div>
+                    <div class="adjustment-controls">
+                        <span class="control-label">Slides:</span>
+                        <div class="control-buttons">
+                            <div class="control-button">-</div>
+                            <div class="control-value">25</div>
+                            <div class="control-button">+</div>
+                        </div>
+                    </div>
+                    <div class="adjustment-controls">
+                        <span class="control-label">Duration:</span>
+                        <div class="control-buttons">
+                            <div class="control-button">-</div>
+                            <div class="control-value">25m</div>
+                            <div class="control-button">+</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chunk-item">
+                    <div class="chunk-header">
+                        <div class="chunk-number">2</div>
+                        <span class="chunk-duration">30 min</span>
+                    </div>
+                    <h3 class="chunk-title">Basic Differentiation Rules</h3>
+                    <div class="chunk-description">Power rule, constant rule, sum rule</div>
+                    <div class="adjustment-controls">
+                        <span class="control-label">Slides:</span>
+                        <div class="control-buttons">
+                            <div class="control-button">-</div>
+                            <div class="control-value">30</div>
+                            <div class="control-button">+</div>
+                        </div>
+                    </div>
+                    <div class="adjustment-controls">
+                        <span class="control-label">Duration:</span>
+                        <div class="control-buttons">
+                            <div class="control-button">-</div>
+                            <div class="control-value">30m</div>
+                            <div class="control-button">+</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chunk-item">
+                    <div class="chunk-header">
+                        <div class="chunk-number">3</div>
+                        <span class="chunk-duration">35 min</span>
+                    </div>
+                    <h3 class="chunk-title">Chain Rule and Product Rule</h3>
+                    <div class="chunk-description">Advanced differentiation techniques</div>
+                    <div class="adjustment-controls">
+                        <span class="control-label">Slides:</span>
+                        <div class="control-buttons">
+                            <div class="control-button">-</div>
+                            <div class="control-value">35</div>
+                            <div class="control-button">+</div>
+                        </div>
+                    </div>
+                    <div class="adjustment-controls">
+                        <span class="control-label">Duration:</span>
+                        <div class="control-buttons">
+                            <div class="control-button">-</div>
+                            <div class="control-value">35m</div>
+                            <div class="control-button">+</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chunk-item">
+                    <div class="chunk-header">
+                        <div class="chunk-number">4</div>
+                        <span class="chunk-duration">20 min</span>
+                    </div>
+                    <h3 class="chunk-title">Practice Problems</h3>
+                    <div class="chunk-description">Review and application exercises</div>
+                    <div class="adjustment-controls">
+                        <span class="control-label">Slides:</span>
+                        <div class="control-buttons">
+                            <div class="control-button">-</div>
+                            <div class="control-value">10</div>
+                            <div class="control-button">+</div>
+                        </div>
+                    </div>
+                    <div class="adjustment-controls">
+                        <span class="control-label">Duration:</span>
+                        <div class="control-buttons">
+                            <div class="control-button">-</div>
+                            <div class="control-value">20m</div>
+                            <div class="control-button">+</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="button primary">Save Changes</button>
+                <button class="button secondary">Reset to Default</button>
+                <button class="button">Add New Chunk</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

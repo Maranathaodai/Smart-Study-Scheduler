@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress Screen - Smart Study Scheduler</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .phone-frame {
+            width: 300px;
+            height: 600px;
+            background: #000;
+            border-radius: 30px;
+            padding: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 25px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .status-bar {
+            height: 30px;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .header {
+            margin-bottom: 20px;
+        }
+        
+        .page-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .page-subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .card {
+            background: #f8f8f8;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #333;
+            width: 60%;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .stat-label {
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .chart-placeholder {
+            height: 60px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .achievement {
+            width: 30px;
+            height: 30px;
+            background: #ddd;
+            border-radius: 15px;
+            margin: 0 5px;
+        }
+        
+        .achievements-row {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        
+        .tip-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .tip-icon {
+            width: 30px;
+            height: 30px;
+            background: #ccc;
+            border-radius: 15px;
+            margin-right: 15px;
+        }
+        
+        .tip-content h4 {
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+        
+        .tip-content p {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .tab-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #f8f8f8;
+            border-top: 2px solid #ddd;
+            display: flex;
+        }
+        
+        .tab {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .tab.active {
+            color: #333;
+        }
+        
+        .tab-icon {
+            width: 20px;
+            height: 20px;
+            background: #ccc;
+            border-radius: 3px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="screen">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>100%</span>
+            </div>
+            
+            <div class="content">
+                <div class="header">
+                    <h1 class="page-title">Progress Overview</h1>
+                    <p class="page-subtitle">Track your learning journey</p>
+                </div>
+                
+                <!-- Overall Progress -->
+                <div class="card">
+                    <h3 class="card-title">Overall Progress</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Remaining</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">0%</div>
+                            <div class="stat-label">Complete</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Weekly Progress -->
+                <div class="card">
+                    <h3 class="card-title">This Week's Activity</h3>
+                    <div class="chart-placeholder">Weekly Activity Chart</div>
+                </div>
+                
+                <!-- Achievements -->
+                <div class="card">
+                    <h3 class="card-title">Achievements</h3>
+                    <div class="achievements-row">
+                        <div class="achievement"></div>
+                        <div class="achievement"></div>
+                        <div class="achievement"></div>
+                    </div>
+                </div>
+                
+                <!-- Study Insights -->
+                <div class="card">
+                    <h3 class="card-title">Study Insights</h3>
+                    <div class="tip-item">
+                        <div class="tip-icon"></div>
+                        <div class="tip-content">
+                            <h4>Peak Study Time</h4>
+                            <p>You're most productive between 2-4 PM</p>
+                        </div>
+                    </div>
+                    <div class="tip-item">
+                        <div class="tip-icon"></div>
+                        <div class="tip-content">
+                            <h4>Consistency Score</h4>
+                            <p>85% - Great job maintaining your routine!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-bar">
+                <div class="tab">
+                    <div class="tab-icon"></div>
+                    <span>Home</span>
+                </div>
+                <div class="tab">
+                    <div class="tab-icon"></div>
+                    <span>Courses</span>
+                </div>
+                <div class="tab">
+                    <div class="tab-icon"></div>
+                    <span>Calendar</span>
+                </div>
+                <div class="tab active">
+                    <div class="tab-icon"></div>
+                    <span>Progress</span>
+                </div>
+                <div class="tab">
+                    <div class="tab-icon"></div>
+                    <span>Profile</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

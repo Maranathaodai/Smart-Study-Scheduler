@@ -7,11 +7,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { UserProvider } from './src/contexts/UserContext';
 import { GoalsProvider } from './src/contexts/GoalsContext';
+import { ProgressProvider } from './src/contexts/ProgressContext';
+import { AuthProvider, useAuth } from './src/contexts/SupabaseAuthContext';
 
 // Import screens
 import SplashScreen from './src/screens/SplashScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import AuthScreen from './src/screens/AuthScreen';
+import SupabaseLoginScreen from './src/screens/SupabaseLoginScreen';
+import SupabaseSignUpScreen from './src/screens/SupabaseSignUpScreen';
+import SupabaseForgotPasswordScreen from './src/screens/SupabaseForgotPasswordScreen';
+import SupabaseLoadingScreen from './src/screens/SupabaseLoadingScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import AddCourseScreen from './src/screens/AddCourseScreen';
 import CoursesScreen from './src/screens/CoursesScreen';
@@ -26,10 +32,20 @@ import HelpSupportScreen from './src/screens/HelpSupportScreen';
 import AboutScreen from './src/screens/AboutScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
 import GoalsScreen from './src/screens/GoalsScreen';
-import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
+import ChunkAdjustmentScreen from './src/screens/ChunkAdjustmentScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
+
+function AuthNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Login" component={SupabaseLoginScreen} />
+      <Stack.Screen name="SignUp" component={SupabaseSignUpScreen} />
+      <Stack.Screen name="ForgotPassword" component={SupabaseForgotPasswordScreen} />
+    </Stack.Navigator>
+  );
+}
 
 function AuthWrapper({ navigation }) {
   return (
@@ -37,7 +53,7 @@ function AuthWrapper({ navigation }) {
       <Stack.Screen name="AuthStart">
         {(props) => <AuthScreen {...props} onComplete={() => navigation.replace('MainTabs')} />}
       </Stack.Screen>
-      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <Stack.Screen name="ForgotPassword" component={SupabaseForgotPasswordScreen} />
     </Stack.Navigator>
   );
 }
@@ -83,47 +99,60 @@ function MainTabs() {
   );
 }
 
-export default function App() {
+function AppContent() {
+  const { user, loading } = useAuth();
   const [appState, setAppState] = useState('splash');
+
+  if (loading) {
+    return <SupabaseLoadingScreen />;
+  }
 
   return (
     <ThemeProvider>
       <UserProvider>
         <GoalsProvider>
-          {appState === 'splash' ? (
-          <SplashScreen onComplete={() => setAppState('onboarding')} />
-        ) : appState === 'onboarding' ? (
-          <OnboardingScreen onComplete={() => setAppState('auth')} />
-        ) : appState === 'auth' ? (
-          // Auth flow is wrapped in its own NavigationContainer so screens can navigate (e.g., Forgot Password)
-          <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="AuthStart">
-                {(props) => <AuthScreen {...props} onComplete={() => setAppState('app')} />}
-              </Stack.Screen>
-              <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-            </Stack.Navigator>
-          </NavigationContainer>
-        ) : (
-          <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="MainTabs" component={MainTabs} />
-              <Stack.Screen name="Auth" component={AuthWrapper} />
-              <Stack.Screen name="AddCourse" component={AddCourseScreen} />
-              <Stack.Screen name="DailyStudy" component={DailyStudyScreen} />
-              <Stack.Screen name="StudySchedule" component={StudyScheduleScreen} />
-              <Stack.Screen name="Notifications" component={NotificationsScreen} />
-              <Stack.Screen name="PrivacySecurity" component={PrivacySecurityScreen} />
-              <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
-              <Stack.Screen name="About" component={AboutScreen} />
-              <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-              <Stack.Screen name="Goals" component={GoalsScreen} />
-            </Stack.Navigator>
-          </NavigationContainer>
-        )}
-        <StatusBar style="auto" />
+          <ProgressProvider>
+            {appState === 'splash' ? (
+              <SplashScreen onComplete={() => setAppState('onboarding')} />
+            ) : appState === 'onboarding' ? (
+              <OnboardingScreen onComplete={() => setAppState('auth')} />
+            ) : !user ? (
+              // Show authentication screens if user is not logged in
+              <NavigationContainer>
+                <AuthNavigator />
+              </NavigationContainer>
+            ) : (
+              // Show main app if user is logged in
+              <NavigationContainer>
+                <Stack.Navigator screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="MainTabs" component={MainTabs} />
+                  <Stack.Screen name="AddCourse" component={AddCourseScreen} />
+                  <Stack.Screen name="DailyStudy" component={DailyStudyScreen} />
+                  <Stack.Screen name="StudySchedule" component={StudyScheduleScreen} />
+                  <Stack.Screen name="Notifications" component={NotificationsScreen} />
+                  <Stack.Screen name="PrivacySecurity" component={PrivacySecurityScreen} />
+                  <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
+                  <Stack.Screen name="About" component={AboutScreen} />
+                  <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+                  <Stack.Screen name="Goals" component={GoalsScreen} />
+                  <Stack.Screen name="ChunkAdjustment" component={ChunkAdjustmentScreen} />
+                </Stack.Navigator>
+              </NavigationContainer>
+            )}
+            <StatusBar style="auto" />
+          </ProgressProvider>
         </GoalsProvider>
       </UserProvider>
+    </ThemeProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

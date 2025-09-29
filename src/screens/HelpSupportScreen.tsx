@@ -25,7 +25,7 @@ export default function HelpSupportScreen({ navigation }: any) {
       'Choose how you\'d like to get help:',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Email', onPress: () => Linking.openURL('mailto:support@smartstudyscheduler.com') },
+        { text: 'Email', onPress: () => Linking.openURL('mailto:maranathaokeleyodai@gmail.com') },
         { text: 'Live Chat', onPress: () => Alert.alert('Live Chat', 'Connecting you to our support team...') },
       ]
     );

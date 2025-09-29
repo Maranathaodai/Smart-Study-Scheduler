@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Study Screen - Low Fidelity Wireframe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .phone-frame {
+            width: 300px;
+            height: 600px;
+            background: #000;
+            border-radius: 30px;
+            padding: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 25px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .status-bar {
+            height: 30px;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 12px;
+            font-weight: bold;
+            border-bottom: 2px dashed #ccc;
+        }
+        
+        .header {
+            height: 50px;
+            background: #f0f0f0;
+            border-bottom: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: #333;
+            position: relative;
+        }
+        
+        .back-button {
+            position: absolute;
+            left: 20px;
+            width: 30px;
+            height: 30px;
+            background: #f0f0f0;
+            border: 2px dashed #333;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+        }
+        
+        .course-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            border: 2px dashed #333;
+            padding: 10px 15px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border: 2px dashed #333;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #333;
+            width: 30%;
+            border-radius: 8px;
+        }
+        
+        .progress-text {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+            border: 2px dashed #666;
+            padding: 8px;
+        }
+        
+        .study-chunk {
+            background: #fff;
+            border: 3px dashed #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .chunk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .chunk-number {
+            background: #333;
+            color: #fff;
+            width: 30px;
+            height: 30px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .chunk-duration {
+            font-size: 12px;
+            color: #666;
+            font-weight: bold;
+            background: #f0f0f0;
+            padding: 5px 10px;
+            border: 2px dashed #666;
+            border-radius: 4px;
+        }
+        
+        .chunk-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            border: 2px dashed #333;
+            padding: 8px 12px;
+        }
+        
+        .chunk-description {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.4;
+            border: 2px dashed #666;
+            padding: 10px;
+        }
+        
+        .button {
+            background: #fff;
+            color: #333;
+            padding: 15px;
+            border: 3px dashed #333;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px 0;
+            width: 100%;
+        }
+        
+        .tips-card {
+            background: #fff;
+            border: 3px dashed #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .tips-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            border: 2px dashed #333;
+            padding: 8px 12px;
+        }
+        
+        .tip-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 2px dashed #f0f0f0;
+        }
+        
+        .tip-item:last-child {
+            border-bottom: none;
+        }
+        
+        .tip-icon {
+            width: 20px;
+            height: 20px;
+            background: #f0f0f0;
+            border: 2px dashed #333;
+            border-radius: 10px;
+            margin-right: 15px;
+        }
+        
+        .tip-text {
+            font-size: 14px;
+            color: #333;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="screen">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>100%</span>
+            </div>
+            
+            <div class="header">
+                <div class="back-button">←</div>
+                <span>Study Session</span>
+            </div>
+            
+            <div class="content">
+                <h2 class="course-title">Mathematics - Calculus</h2>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <p class="progress-text">Chunk 1 of 3</p>
+                
+                <div class="study-chunk">
+                    <div class="chunk-header">
+                        <div class="chunk-number">1</div>
+                        <span class="chunk-duration">25 min</span>
+                    </div>
+                    <h3 class="chunk-title">Introduction to Derivatives</h3>
+                    <p class="chunk-description">
+                        Learn the fundamental concepts of derivatives and their applications in calculus. This section covers basic differentiation rules and practical examples.
+                    </p>
+                    <button class="button">Start Studying</button>
+                </div>
+                
+                <div class="tips-card">
+                    <h3 class="tips-title">Study Tips</h3>
+                    <div class="tip-item">
+                        <div class="tip-icon"></div>
+                        <span class="tip-text">Take breaks every 25 minutes</span>
+                    </div>
+                    <div class="tip-item">
+                        <div class="tip-icon"></div>
+                        <span class="tip-text">Review key concepts after each chunk</span>
+                    </div>
+                    <div class="tip-item">
+                        <div class="tip-icon"></div>
+                        <span class="tip-text">Take notes to reinforce learning</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

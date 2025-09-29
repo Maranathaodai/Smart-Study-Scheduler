@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onboarding Screen - Low Fidelity Wireframe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .phone-frame {
+            width: 300px;
+            height: 600px;
+            background: #000;
+            border-radius: 30px;
+            padding: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 25px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .status-bar {
+            height: 30px;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 12px;
+            font-weight: bold;
+            border-bottom: 2px dashed #ccc;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 40px 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .welcome-icon {
+            width: 100px;
+            height: 100px;
+            background: #fff;
+            border: 3px dashed #333;
+            border-radius: 50px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            font-size: 40px;
+        }
+        
+        .welcome-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            border: 2px dashed #333;
+            padding: 10px 20px;
+        }
+        
+        .welcome-subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 40px;
+            line-height: 1.4;
+            border: 2px dashed #666;
+            padding: 15px 20px;
+        }
+        
+        .button {
+            background: #fff;
+            color: #333;
+            padding: 15px 40px;
+            border: 3px dashed #333;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px 0;
+            width: 100%;
+        }
+        
+        .button.secondary {
+            border: 3px dashed #666;
+            color: #666;
+        }
+        
+        .page-indicator {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            margin: 0 4px;
+        }
+        
+        .dot.active {
+            border: 2px dashed #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="screen">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>100%</span>
+            </div>
+            
+            <div class="content">
+                <div class="welcome-icon">📚</div>
+                <h1 class="welcome-title">Welcome to Smart Study Scheduler</h1>
+                <p class="welcome-subtitle">
+                    Plan your study sessions with AI-powered scheduling and track your progress effectively.
+                </p>
+                <button class="button">Get Started</button>
+                <button class="button secondary">Skip</button>
+                
+                <div class="page-indicator">
+                    <div class="dot active"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

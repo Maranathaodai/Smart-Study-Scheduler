@@ -11,38 +11,40 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { dummyUser } from '../lib/dummy-data';
+// Removed dummy data imports
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUser } from '../contexts/UserContext';
+import { useAuth } from '../contexts/SupabaseAuthContext';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function EditProfileScreen({ navigation }: any) {
   const { colors } = useTheme();
-  const { user, updateUser } = useUser();
+  const { user: localUserData, updateUser } = useUser();
+  const { user: supabaseUser } = useAuth();
   const [formData, setFormData] = useState({
-    name: user.name,
-    email: user.email,
-    bio: user.bio || '',
-    university: user.university || '',
-    major: user.major || '',
-    year: user.year || '',
-    avatar: user.avatar || '',
+    name: supabaseUser?.user_metadata?.full_name || '',
+    email: supabaseUser?.email || '',
+    bio: supabaseUser?.user_metadata?.bio || '',
+    university: supabaseUser?.user_metadata?.university || '',
+    major: supabaseUser?.user_metadata?.major || '',
+    year: supabaseUser?.user_metadata?.year || '',
+    avatar: supabaseUser?.user_metadata?.avatar_url || '',
   });
 
   const [isEditing, setIsEditing] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [originalData, setOriginalData] = useState({
-    name: user.name,
-    email: user.email,
-    bio: user.bio || '',
-    university: user.university || '',
-    major: user.major || '',
-    year: user.year || '',
-    avatar: user.avatar || '',
+    name: supabaseUser?.user_metadata?.full_name || '',
+    email: supabaseUser?.email || '',
+    bio: supabaseUser?.user_metadata?.bio || '',
+    university: supabaseUser?.user_metadata?.university || '',
+    major: supabaseUser?.user_metadata?.major || '',
+    year: supabaseUser?.user_metadata?.year || '',
+    avatar: supabaseUser?.user_metadata?.avatar_url || '',
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name.trim() || !formData.email.trim()) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
@@ -53,10 +55,16 @@ export default function EditProfileScreen({ navigation }: any) {
       return;
     }
 
-    updateUser(formData);
-    setOriginalData({ ...formData });
-    setHasUnsavedChanges(false);
-    Alert.alert('Success', 'Profile updated successfully!');
+    try {
+      // Update user data (including avatar if changed)
+      await updateUser(formData);
+      setOriginalData({ ...formData });
+      setHasUnsavedChanges(false);
+      Alert.alert('Success', 'Profile updated successfully!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      Alert.alert('Error', 'Failed to update profile. Please try again.');
+    }
   };
 
   const handleCancel = () => {
@@ -173,24 +181,24 @@ export default function EditProfileScreen({ navigation }: any) {
   // Update form data when user data changes
   useEffect(() => {
     setFormData({
-      name: user.name,
-      email: user.email,
-      bio: user.bio || '',
-      university: user.university || '',
-      major: user.major || '',
-      year: user.year || '',
-      avatar: user.avatar || '',
+      name: supabaseUser?.user_metadata?.full_name || '',
+      email: supabaseUser?.email || '',
+      bio: supabaseUser?.user_metadata?.bio || '',
+      university: supabaseUser?.user_metadata?.university || '',
+      major: supabaseUser?.user_metadata?.major || '',
+      year: supabaseUser?.user_metadata?.year || '',
+      avatar: supabaseUser?.user_metadata?.avatar_url || '',
     });
     setOriginalData({
-      name: user.name,
-      email: user.email,
-      bio: user.bio || '',
-      university: user.university || '',
-      major: user.major || '',
-      year: user.year || '',
-      avatar: user.avatar || '',
+      name: supabaseUser?.user_metadata?.full_name || '',
+      email: supabaseUser?.email || '',
+      bio: supabaseUser?.user_metadata?.bio || '',
+      university: supabaseUser?.user_metadata?.university || '',
+      major: supabaseUser?.user_metadata?.major || '',
+      year: supabaseUser?.user_metadata?.year || '',
+      avatar: supabaseUser?.user_metadata?.avatar_url || '',
     });
-  }, [user]);
+  }, [supabaseUser]);
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
@@ -202,14 +210,7 @@ export default function EditProfileScreen({ navigation }: any) {
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>Edit Profile</Text>
-        <TouchableOpacity
-          style={styles.saveButton}
-          onPress={handleSave}
-        >
-          <Text style={styles.saveButtonText}>
-            Save
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.placeholder} />
       </View>
 
       <View style={styles.content}>
@@ -341,7 +342,7 @@ export default function EditProfileScreen({ navigation }: any) {
           <Button
             title={hasUnsavedChanges ? "Save Changes" : "Save"}
             onPress={handleSave}
-            style={styles.actionButton}
+            style={[styles.actionButton, styles.primaryActionButton] as any}
           />
         </View>
 
@@ -386,14 +387,8 @@ const styles = StyleSheet.create({
     color: '#000000',
     flex: 1,
   },
-  saveButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '600',
+  placeholder: {
+    width: 24,
   },
   content: {
     paddingHorizontal: 24,
@@ -498,7 +493,7 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
   },
-  saveButtonHighlight: {
+  primaryActionButton: {
     backgroundColor: '#007AFF',
   },
   unsavedWarning: {

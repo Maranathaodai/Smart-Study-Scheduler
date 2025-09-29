@@ -23,7 +23,10 @@ export function ProgressBar({
   size = 'md',
   style,
 }: ProgressBarProps) {
-  const percentage = Math.min((value / max) * 100, 100);
+  // Handle division by zero and NaN values
+  const safeValue = isNaN(value) || !isFinite(value) ? 0 : value;
+  const safeMax = isNaN(max) || !isFinite(max) || max <= 0 ? 1 : max;
+  const percentage = Math.min((safeValue / safeMax) * 100, 100);
 
   const sizeStyles = {
     sm: styles.sm,
@@ -45,7 +48,7 @@ export function ProgressBar({
             {Math.round(percentage)}% Complete
           </Text>
           <Text style={[styles.value, textSizeStyles[size]]}>
-            {value} / {max}
+            {safeValue} / {safeMax}
           </Text>
         </View>
       )}

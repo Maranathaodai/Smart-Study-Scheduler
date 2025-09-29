@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar Screen - Low Fidelity Wireframe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .phone-frame {
+            width: 300px;
+            height: 600px;
+            background: #000;
+            border-radius: 30px;
+            padding: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 25px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .status-bar {
+            height: 30px;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 12px;
+            font-weight: bold;
+            border-bottom: 2px dashed #ccc;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+        }
+        
+        .page-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            border: 2px dashed #333;
+            padding: 10px 15px;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            margin: 20px 0;
+            background: #f0f0f0;
+            border: 3px dashed #333;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .calendar-day {
+            aspect-ratio: 1;
+            background: #fff;
+            border: 2px dashed #333;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .calendar-day.today {
+            background: #333;
+            color: #fff;
+        }
+        
+        .calendar-day.header {
+            background: #f0f0f0;
+            font-size: 10px;
+            color: #666;
+            border: 2px dashed #666;
+        }
+        
+        .card {
+            background: #fff;
+            border: 3px dashed #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            border: 2px dashed #333;
+            padding: 8px 12px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 30px 20px;
+            color: #666;
+            border: 2px dashed #666;
+            border-radius: 8px;
+        }
+        
+        .empty-icon {
+            width: 50px;
+            height: 50px;
+            background: #f0f0f0;
+            border: 3px dashed #666;
+            border-radius: 25px;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 20px;
+        }
+        
+        .tab-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #f0f0f0;
+            border-top: 2px dashed #ccc;
+            display: flex;
+            padding: 8px 0;
+        }
+        
+        .tab {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #333;
+            border: 2px dashed #333;
+            margin: 0 5px;
+            border-radius: 8px;
+        }
+        
+        .tab.active {
+            background: #333;
+            color: #fff;
+        }
+        
+        .tab-icon {
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border: 2px dashed #333;
+            border-radius: 4px;
+            margin-bottom: 4px;
+        }
+        
+        .tab.active .tab-icon {
+            background: #fff;
+            border: 2px dashed #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="screen">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>100%</span>
+            </div>
+            
+            <div class="content">
+                <h1 class="page-title">Study Calendar</h1>
+                
+                <div class="calendar-grid">
+                    <div class="calendar-day header">Sun</div>
+                    <div class="calendar-day header">Mon</div>
+                    <div class="calendar-day header">Tue</div>
+                    <div class="calendar-day header">Wed</div>
+                    <div class="calendar-day header">Thu</div>
+                    <div class="calendar-day header">Fri</div>
+                    <div class="calendar-day header">Sat</div>
+                    <div class="calendar-day">1</div>
+                    <div class="calendar-day">2</div>
+                    <div class="calendar-day">3</div>
+                    <div class="calendar-day">4</div>
+                    <div class="calendar-day">5</div>
+                    <div class="calendar-day">6</div>
+                    <div class="calendar-day">7</div>
+                    <div class="calendar-day">8</div>
+                    <div class="calendar-day">9</div>
+                    <div class="calendar-day">10</div>
+                    <div class="calendar-day">11</div>
+                    <div class="calendar-day">12</div>
+                    <div class="calendar-day">13</div>
+                    <div class="calendar-day">14</div>
+                    <div class="calendar-day">15</div>
+                    <div class="calendar-day today">16</div>
+                    <div class="calendar-day">17</div>
+                    <div class="calendar-day">18</div>
+                    <div class="calendar-day">19</div>
+                    <div class="calendar-day">20</div>
+                    <div class="calendar-day">21</div>
+                    <div class="calendar-day">22</div>
+                    <div class="calendar-day">23</div>
+                    <div class="calendar-day">24</div>
+                    <div class="calendar-day">25</div>
+                    <div class="calendar-day">26</div>
+                    <div class="calendar-day">27</div>
+                    <div class="calendar-day">28</div>
+                    <div class="calendar-day">29</div>
+                    <div class="calendar-day">30</div>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">Today's Sessions</h3>
+                    <div class="empty-state">
+                        <div class="empty-icon">📅</div>
+                        <p>No study sessions scheduled for this date</p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">This Month's Progress</h3>
+                    <div class="empty-state">
+                        <div class="empty-icon">📊</div>
+                        <p>No study data yet. Add courses and start studying!</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-bar">
+                <div class="tab">
+                    <div class="tab-icon"></div>
+                    <span>Home</span>
+                </div>
+                <div class="tab">
+                    <div class="tab-icon"></div>
+                    <span>Courses</span>
+                </div>
+                <div class="tab active">
+                    <div class="tab-icon"></div>
+                    <span>Calendar</span>
+                </div>
+                <div class="tab">
+                    <div class="tab-icon"></div>
+                    <span>Progress</span>
+                </div>
+                <div class="tab">
+                    <div class="tab-icon"></div>
+                    <span>Profile</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

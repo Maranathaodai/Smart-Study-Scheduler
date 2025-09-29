@@ -12,27 +12,42 @@ import { useNavigation } from '@react-navigation/native';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { ProgressBar } from '../components/ui/ProgressBar';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, differenceInDays, addDays } from 'date-fns';
 import * as DocumentPicker from 'expo-document-picker';
 import { useTheme } from '../contexts/ThemeContext';
+import { courseService } from '../lib/courseService';
+import { generateIntelligentSchedules } from '../lib/scheduler';
+import { courseStorage } from '../lib/courseStorage';
+import { Course, StudySession } from '../lib/types';
 
 export default function AddCourseScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const [courseName, setCourseName] = useState('');
   const [category, setCategory] = useState('');
+  const [customCategory, setCustomCategory] = useState('');
   const [loading, setLoading] = useState(false);
-  const [totalSlides, setTotalSlides] = useState('');
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)); // 30 days from now
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-  const [studySessions, setStudySessions] = useState([]);
+  const [studySessions, setStudySessions] = useState<StudySession[]>([]);
   const [showSchedule, setShowSchedule] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [isEditingSchedule, setIsEditingSchedule] = useState(false);
+  const [courseContent, setCourseContent] = useState('');
+  
+  // AI Processing States
+  const [isProcessingFiles, setIsProcessingFiles] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const [processingStatus, setProcessingStatus] = useState('');
+  const [course, setCourse] = useState<Course | null>(null);
+  const [aiGeneratedChunks, setAiGeneratedChunks] = useState<any[]>([]);
+  const [maxStudyTimePerSession, setMaxStudyTimePerSession] = useState(60); // minutes
+  const [preferredChunkSize, setPreferredChunkSize] = useState<'small' | 'medium' | 'large'>('medium');
 
   const categories = [
     'Mathematics',
@@ -45,13 +60,12 @@ export default function AddCourseScreen() {
     'Other',
   ];
 
-  const generateSmartSchedule = () => {
-    if (!totalSlides || !startDate || !endDate) {
-      Alert.alert('Error', 'Please fill in all fields including total slides and dates');
+  const generateSmartSchedule = async () => {
+    if (!course || !startDate || !endDate) {
+      Alert.alert('Error', 'Please upload files and set study dates first');
       return;
     }
 
-    const slides = parseInt(totalSlides);
     const totalDays = differenceInDays(endDate, startDate);
     
     if (totalDays <= 0) {
@@ -59,48 +73,54 @@ export default function AddCourseScreen() {
       return;
     }
 
-    // Smart scheduling algorithm
-    const sessions = [];
-    const slidesPerSession = Math.ceil(slides / totalDays);
-    const maxSlidesPerSession = Math.min(slidesPerSession + 2, 15); // Cap at 15 slides per session
-    const minSlidesPerSession = Math.max(slidesPerSession - 2, 3); // Minimum 3 slides per session
-
-    let remainingSlides = slides;
-    let currentDate = new Date(startDate);
-
-    while (remainingSlides > 0 && currentDate <= endDate) {
-      const slidesForThisSession = Math.min(
-        remainingSlides,
-        Math.floor(Math.random() * (maxSlidesPerSession - minSlidesPerSession + 1)) + minSlidesPerSession
-      );
-
-      sessions.push({
-        id: sessions.length + 1,
-        date: new Date(currentDate),
-        slides: slidesForThisSession,
-        completed: false,
-        completedSlides: 0,
-      });
-
-      remainingSlides -= slidesForThisSession;
-      currentDate = addDays(currentDate, 1);
+    if (!course.processedChunks || course.processedChunks.length === 0) {
+      Alert.alert('Error', 'No processed content available. Please upload and process files first.');
+      return;
     }
 
-    setStudySessions(sessions);
-    setShowSchedule(true);
-    
-    // Navigate to study schedule screen
-    navigation.navigate('StudySchedule', {
-      course: { name: courseName, category },
-      studySessions: sessions
-    });
+    try {
+      setLoading(true);
+      
+      // Generate intelligent schedule using AI-processed chunks
+      const schedule = generateIntelligentSchedules({
+        courses: [course],
+        startDate,
+        endDate,
+        studyDaysOfWeek: [1, 2, 3, 4, 5], // Monday to Friday
+        maxStudyTimePerSession,
+        preferredChunkSize,
+      });
+
+      setStudySessions(schedule.allSessions);
+      setShowSchedule(true);
+      
+      Alert.alert(
+        'Smart Schedule Generated! 🎉',
+        `Created ${schedule.allSessions.length} intelligent study sessions based on your uploaded content.`,
+        [
+          {
+            text: 'View Schedule',
+            onPress: () => (navigation as any).navigate('StudySchedule', {
+              course: course,
+              studySessions: schedule.allSessions
+            })
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error generating schedule:', error);
+      Alert.alert('Error', 'Failed to generate smart schedule. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFileUpload = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'],
+        type: ['application/pdf', 'image/*', 'text/plain', 'text/markdown'],
         copyToCacheDirectory: true,
+        multiple: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -114,11 +134,214 @@ export default function AddCourseScreen() {
         }));
 
         setUploadedFiles(prev => [...prev, ...newFiles]);
-        Alert.alert('Success', `${newFiles.length} file(s) uploaded successfully!`);
+        
+        // Automatically process files with AI
+        await processFilesWithAI(newFiles);
       }
     } catch (error) {
       console.error('Error picking document:', error);
       Alert.alert('Error', 'Failed to upload file. Please try again.');
+    }
+  };
+
+  const processManualContentOnly = async () => {
+    if (!courseName.trim() || !category) {
+      Alert.alert('Error', 'Please enter course name and select category first');
+      return;
+    }
+
+    if (!courseContent.trim()) {
+      Alert.alert('Error', 'Please enter content in the manual input field');
+      return;
+    }
+
+    try {
+      setIsProcessingFiles(true);
+      setProcessingProgress(0);
+      setProcessingStatus('Creating course...');
+
+      // Create course with unique color
+      const uniqueColor = courseStorage.generateUniqueColor();
+      const finalCategory = category === 'Other' ? customCategory : category;
+      const newCourse = await courseService.createCourse(
+        courseName,
+        finalCategory,
+        'medium', // Default difficulty
+        5, // Default priority
+        uniqueColor // Unique color
+      );
+
+      setCourse(newCourse);
+      setProcessingProgress(20);
+      setProcessingStatus('Processing manual content...');
+
+      // Process manual content
+      const processingResult = await courseService.processManualContent(courseContent, courseName);
+      
+      if (processingResult) {
+        setProcessingProgress(80);
+        setProcessingStatus('Generating study chunks...');
+        
+        // Update course with processed content
+        const updatedCourse = {
+          ...newCourse,
+          processedChunks: processingResult.chunks,
+          keyConcepts: processingResult.keyConcepts,
+          totalEstimatedTime: processingResult.totalEstimatedTime,
+          processingStatus: 'completed' as const,
+        };
+        
+        setCourse(updatedCourse);
+        setAiGeneratedChunks(processingResult.chunks);
+        
+        setProcessingProgress(100);
+        setProcessingStatus('Processing complete!');
+        
+        Alert.alert(
+          'AI Processing Complete! 🎉',
+          `Successfully processed your content into ${processingResult.chunks.length} intelligent study chunks.\n\nTotal estimated study time: ${Math.round(processingResult.totalEstimatedTime)} minutes\n\nSchedule will be generated automatically!`,
+          [
+            {
+              text: 'Great!',
+              onPress: () => {
+                setIsProcessingFiles(false);
+                setProcessingProgress(0);
+                setProcessingStatus('');
+                // Automatically generate schedule after processing
+                setTimeout(() => {
+                  generateSmartSchedule();
+                }, 500);
+              }
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error processing manual content:', error);
+      Alert.alert(
+        'Processing Error',
+        `Failed to process content: ${error.message}\n\nPlease try again or check your content.`,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setIsProcessingFiles(false);
+              setProcessingProgress(0);
+              setProcessingStatus('');
+            }
+          }
+        ]
+      );
+    }
+  };
+
+  const processFilesWithAI = async (files: any[]) => {
+    if (!courseName.trim() || !category) {
+      Alert.alert('Error', 'Please enter course name and select category first');
+      return;
+    }
+
+    try {
+      setIsProcessingFiles(true);
+      setProcessingProgress(0);
+      setProcessingStatus('Creating course...');
+
+      // Create course with unique color
+      const uniqueColor = courseStorage.generateUniqueColor();
+      const finalCategory = category === 'Other' ? customCategory : category;
+      const newCourse = await courseService.createCourse(
+        courseName,
+        finalCategory,
+        'medium', // Default difficulty
+        5, // Default priority
+        uniqueColor // Unique color
+      );
+
+      setCourse(newCourse);
+      setProcessingProgress(20);
+      setProcessingStatus('Adding files to course...');
+
+      // Add files to course manually
+      const courseWithFiles = {
+        ...newCourse,
+        files: files.map(file => ({
+          id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          uploadedAt: new Date(),
+          uri: file.uri, // Pass the actual file URI
+        }))
+      };
+      
+      setProcessingProgress(40);
+      setProcessingStatus('Processing content with AI...');
+
+      // Use manual content if provided, otherwise process files
+      let processingResult;
+      if (courseContent.trim()) {
+        // Use manual content input
+        setProcessingStatus('Processing manual content...');
+        processingResult = await courseService.processManualContent(courseContent, courseName);
+      } else {
+        // Process uploaded files
+        processingResult = await courseService.processCourseContent(courseWithFiles);
+      }
+      
+      if (processingResult) {
+        setProcessingProgress(80);
+        setProcessingStatus('Generating study chunks...');
+        
+        // Update course with processed content
+        const updatedCourse = {
+          ...courseWithFiles,
+          processedChunks: processingResult.chunks,
+          keyConcepts: processingResult.keyConcepts,
+          totalEstimatedTime: processingResult.totalEstimatedTime,
+          processingStatus: 'completed' as const,
+        };
+        
+        setCourse(updatedCourse);
+        setAiGeneratedChunks(processingResult.chunks);
+        
+        setProcessingProgress(100);
+        setProcessingStatus('Processing complete!');
+        
+        Alert.alert(
+          'AI Processing Complete! 🎉',
+          `Successfully processed ${files.length} file(s) into ${processingResult.chunks.length} intelligent study chunks.\n\nTotal estimated study time: ${Math.round(processingResult.totalEstimatedTime)} minutes\n\nSchedule will be generated automatically!`,
+          [
+            {
+              text: 'Great!',
+              onPress: () => {
+                setIsProcessingFiles(false);
+                setProcessingProgress(0);
+                setProcessingStatus('');
+                // Automatically generate schedule after processing
+                setTimeout(() => {
+                  generateSmartSchedule();
+                }, 500);
+              }
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error processing files:', error);
+      Alert.alert(
+        'Processing Error',
+        `Failed to process files: ${error.message}\n\nDon't worry! You can still create a course manually.`,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setIsProcessingFiles(false);
+              setProcessingProgress(0);
+              setProcessingStatus('');
+            }
+          }
+        ]
+      );
     }
   };
 
@@ -165,7 +388,7 @@ export default function AddCourseScreen() {
       };
       
       // Sort sessions by date
-      return sessions.sort((a, b) => new Date(a.date) - new Date(b.date));
+      return sessions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     });
   };
 
@@ -174,20 +397,76 @@ export default function AddCourseScreen() {
   };
 
   const handleAddCourse = async () => {
-    if (!courseName.trim() || !category || !totalSlides) {
-      Alert.alert('Error', 'Please fill in all fields');
+    console.log('Add Course clicked');
+    console.log('Course name:', courseName);
+    console.log('Category:', category);
+    console.log('Course:', course);
+    console.log('Processing status:', course?.processingStatus);
+
+    if (!courseName.trim() || !category) {
+      Alert.alert('Error', 'Please fill in course name and category');
+      return;
+    }
+
+    if (category === 'Other' && !customCategory.trim()) {
+      Alert.alert('Error', 'Please enter a custom category');
+      return;
+    }
+
+    if (!course || course.processingStatus !== 'completed') {
+      Alert.alert('Error', 'Please upload and process files first');
       return;
     }
 
     setLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Save course to storage
+      await courseStorage.addCourse(course);
+      
+      // Generate study sessions if they don't exist
+      let sessionsToSave = studySessions;
+      if (sessionsToSave.length === 0 && course.processedChunks && course.processedChunks.length > 0) {
+        // Generate basic study sessions from processed chunks
+        const generatedSessions = await generateIntelligentSchedules({
+          courses: [course],
+          startDate: startDate || new Date(),
+          endDate: endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to 7 days from now
+          studyDaysOfWeek: [1, 2, 3, 4, 5], // Default to weekdays
+          maxStudyTimePerSession: maxStudyTimePerSession || 60,
+          preferredChunkSize: preferredChunkSize || 'medium',
+        });
+        sessionsToSave = generatedSessions.allSessions;
+        setStudySessions(generatedSessions.allSessions);
+      }
+      
+      // Save study sessions
+      if (sessionsToSave.length > 0) {
+        await courseStorage.saveStudySessions(sessionsToSave);
+      }
+      
       setLoading(false);
-      Alert.alert('Success', 'Course added successfully!', [
-        { text: 'OK', onPress: () => navigation.goBack() }
-      ]);
-    }, 1500);
+      Alert.alert(
+        'Success! 🎉', 
+        `Course "${courseName}" has been created successfully with ${course.processedChunks?.length || 0} intelligent study chunks!\n\nColor: ${course.color}`,
+        [
+          { 
+            text: 'View Course', 
+            onPress: () => {
+              // Navigate to courses screen
+              navigation.navigate('Courses' as never);
+            }
+          },
+          { 
+            text: 'OK', 
+            onPress: () => navigation.goBack() 
+          }
+        ]
+      );
+    } catch (error) {
+      setLoading(false);
+      Alert.alert('Error', 'Failed to add course. Please try again.');
+    }
   };
 
   return (
@@ -216,13 +495,53 @@ export default function AddCourseScreen() {
               onChangeText={setCourseName}
             />
             
-            <Input
-              label="Total Slides"
-              placeholder="Enter total number of slides"
-              value={totalSlides}
-              onChangeText={setTotalSlides}
-              keyboardType="numeric"
-            />
+            <Text style={styles.preferenceLabel}>Study Preferences</Text>
+            
+            <View style={styles.preferenceRow}>
+              <Text style={styles.preferenceText}>Max Study Time per Session:</Text>
+              <View style={styles.timeSelector}>
+                {[30, 45, 60, 90].map((time) => (
+                  <TouchableOpacity
+                    key={time}
+                    style={[
+                      styles.timeButton,
+                      maxStudyTimePerSession === time && styles.selectedTimeButton,
+                    ]}
+                    onPress={() => setMaxStudyTimePerSession(time)}
+                  >
+                    <Text style={[
+                      styles.timeButtonText,
+                      maxStudyTimePerSession === time && styles.selectedTimeButtonText,
+                    ]}>
+                      {time}m
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+            
+            <View style={styles.preferenceRow}>
+              <Text style={styles.preferenceText}>Chunk Size Preference:</Text>
+              <View style={styles.chunkSizeSelector}>
+                {(['small', 'medium', 'large'] as const).map((size) => (
+                  <TouchableOpacity
+                    key={size}
+                    style={[
+                      styles.chunkSizeButton,
+                      preferredChunkSize === size && styles.selectedChunkSizeButton,
+                    ]}
+                    onPress={() => setPreferredChunkSize(size)}
+                  >
+                    <Text style={[
+                      styles.chunkSizeButtonText,
+                      preferredChunkSize === size && styles.selectedChunkSizeButtonText,
+                    ]}>
+                      {size.charAt(0).toUpperCase() + size.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
             
             <Text style={styles.categoryLabel}>Category</Text>
             <View style={styles.categoryGrid}>
@@ -233,7 +552,12 @@ export default function AddCourseScreen() {
                     styles.categoryButton,
                     category === cat && styles.selectedCategory,
                   ]}
-                  onPress={() => setCategory(cat)}
+                  onPress={() => {
+                    setCategory(cat);
+                    if (cat !== 'Other') {
+                      setCustomCategory('');
+                    }
+                  }}
                 >
                   <Text
                     style={[
@@ -246,6 +570,149 @@ export default function AddCourseScreen() {
                 </TouchableOpacity>
               ))}
             </View>
+            
+            {category === 'Other' && (
+              <View style={styles.customCategoryContainer}>
+                <Text style={styles.customCategoryLabel}>Custom Category</Text>
+                <Input
+                  placeholder="Enter your custom category"
+                  value={customCategory}
+                  onChangeText={setCustomCategory}
+                  style={styles.customCategoryInput}
+                />
+              </View>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card style={styles.card}>
+          <CardHeader>
+            <CardTitle>Upload Materials</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TouchableOpacity 
+              style={styles.uploadButton} 
+              onPress={handleFileUpload}
+              disabled={isProcessingFiles}
+            >
+              <Ionicons name="cloud-upload-outline" size={32} color="#007AFF" />
+              <Text style={styles.uploadText}>
+                {isProcessingFiles ? 'Processing...' : 'Tap to upload files'}
+              </Text>
+              <Text style={styles.uploadSubtext}>
+                PDF, Images, Text files supported
+              </Text>
+            </TouchableOpacity>
+            
+            {isProcessingFiles && (
+              <View style={styles.processingContainer}>
+                <Text style={styles.processingStatus}>{processingStatus}</Text>
+                <ProgressBar
+                  value={processingProgress}
+                  max={100}
+                  showLabel
+                  size="lg"
+                />
+              </View>
+            )}
+
+            {/* Manual Content Input */}
+            <View style={styles.contentInputContainer}>
+              <Text style={styles.contentInputLabel}>
+                📝 Additional Content Input (Optional):
+              </Text>
+              <Text style={[styles.contentInputSubtext, { color: colors.textSecondary }]}>
+                You can either upload files (which will be processed with AI) or paste content here, or both! The AI will process both sources to create comprehensive study chunks.
+              </Text>
+              <Input
+                label="Course Content"
+                placeholder="Paste additional content here, or leave empty to use only uploaded files..."
+                value={courseContent}
+                onChangeText={setCourseContent}
+                multiline
+                numberOfLines={6}
+                style={styles.contentInput}
+              />
+              <Text style={styles.contentInputHint}>
+                This content will be used to create study chunks. You can copy text from your PDF or image files.
+              </Text>
+              
+              {courseContent.trim() && (!course || course.processingStatus !== 'completed') && (
+                <Button
+                  title="Process Content with AI"
+                  onPress={() => processManualContentOnly()}
+                  loading={isProcessingFiles}
+                  style={styles.processButton}
+                />
+              )}
+            </View>
+            
+            {course && course.processingStatus === 'completed' && (
+              <View style={styles.processingCompleteContainer}>
+                <View style={styles.successIcon}>
+                  <Ionicons name="checkmark-circle" size={24} color="#34C759" />
+                </View>
+                <View style={styles.processingCompleteInfo}>
+                  <Text style={styles.processingCompleteTitle}>
+                    AI Processing Complete! 🎉
+                  </Text>
+                  <Text style={styles.processingCompleteText}>
+                    Generated {course.processedChunks?.length || 0} intelligent study chunks
+                  </Text>
+                  <Text style={styles.processingCompleteText}>
+                    Total estimated time: {Math.round(course.totalEstimatedTime || 0)} minutes
+                  </Text>
+                  {course.keyConcepts && course.keyConcepts.length > 0 && (
+                    <View style={styles.keyConceptsContainer}>
+                      <Text style={styles.keyConceptsTitle}>Key Concepts:</Text>
+                      <View style={styles.keyConceptsList}>
+                        {course.keyConcepts.slice(0, 5).map((concept, index) => (
+                          <View key={index} style={styles.keyConceptTag}>
+                            <Text style={styles.keyConceptText}>{concept}</Text>
+                          </View>
+                        ))}
+                        {course.keyConcepts.length > 5 && (
+                          <Text style={styles.moreConcepts}>
+                            +{course.keyConcepts.length - 5} more
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+            
+            {uploadedFiles.length > 0 && (
+              <View style={styles.uploadedFilesContainer}>
+                <Text style={styles.uploadedFilesTitle}>Uploaded Files ({uploadedFiles.length})</Text>
+                {uploadedFiles.map((file) => (
+                  <View key={file.id} style={styles.fileItem}>
+                    <View style={styles.fileInfo}>
+                      <Ionicons 
+                        name={file.type.includes('pdf') ? 'document-text' : 
+                              file.type.includes('word') ? 'document' : 
+                              file.type.includes('powerpoint') ? 'easel' : 'document'} 
+                        size={20} 
+                        color="#007AFF" 
+                      />
+                      <View style={styles.fileDetails}>
+                        <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
+                        <Text style={styles.fileSize}>
+                          {file.size > 0 ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : 'Unknown size'}
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity 
+                      style={styles.removeFileButton}
+                      onPress={() => removeFile(file.id)}
+                    >
+                      <Ionicons name="close-circle" size={20} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
           </CardContent>
         </Card>
 
@@ -308,57 +775,13 @@ export default function AddCourseScreen() {
               </View>
             )}
 
-            <Button
-              title="Generate Smart Schedule"
-              onPress={generateSmartSchedule}
-              variant="outline"
-              style={styles.scheduleButton}
-            />
-          </CardContent>
-        </Card>
-
-        <Card style={styles.card}>
-          <CardHeader>
-            <CardTitle>Upload Materials</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TouchableOpacity style={styles.uploadButton} onPress={handleFileUpload}>
-              <Ionicons name="cloud-upload-outline" size={32} color="#007AFF" />
-              <Text style={styles.uploadText}>Tap to upload files</Text>
-              <Text style={styles.uploadSubtext}>
-                PDF, DOC, PPT files supported
-              </Text>
-            </TouchableOpacity>
-            
-            {uploadedFiles.length > 0 && (
-              <View style={styles.uploadedFilesContainer}>
-                <Text style={styles.uploadedFilesTitle}>Uploaded Files ({uploadedFiles.length})</Text>
-                {uploadedFiles.map((file) => (
-                  <View key={file.id} style={styles.fileItem}>
-                    <View style={styles.fileInfo}>
-                      <Ionicons 
-                        name={file.type.includes('pdf') ? 'document-text' : 
-                              file.type.includes('word') ? 'document' : 
-                              file.type.includes('powerpoint') ? 'easel' : 'document'} 
-                        size={20} 
-                        color="#007AFF" 
-                      />
-                      <View style={styles.fileDetails}>
-                        <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
-                        <Text style={styles.fileSize}>
-                          {file.size > 0 ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : 'Unknown size'}
-                        </Text>
-                      </View>
-                    </View>
-                    <TouchableOpacity 
-                      style={styles.removeFileButton}
-                      onPress={() => removeFile(file.id)}
-                    >
-                      <Ionicons name="close-circle" size={20} color="#FF3B30" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
+            {course && course.processingStatus === 'completed' && (
+              <Button
+                title="Generate Smart Schedule"
+                onPress={generateSmartSchedule}
+                variant="outline"
+                style={styles.scheduleButton}
+              />
             )}
           </CardContent>
         </Card>
@@ -441,6 +864,7 @@ export default function AddCourseScreen() {
           onPress={handleAddCourse}
           loading={loading}
           style={styles.addButton}
+          disabled={!course || course.processingStatus !== 'completed'}
         />
       </View>
 
@@ -510,6 +934,24 @@ const styles = StyleSheet.create({
   },
   selectedCategoryText: {
     color: '#FFFFFF',
+  },
+  customCategoryContainer: {
+    marginTop: 16,
+  },
+  customCategoryLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+  },
+  customCategoryInput: {
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    backgroundColor: '#FFFFFF',
   },
   uploadButton: {
     borderWidth: 2,
@@ -708,5 +1150,182 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  preferenceLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000000',
+    marginBottom: 12,
+    marginTop: 16,
+  },
+  preferenceRow: {
+    marginBottom: 16,
+  },
+  preferenceText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#000000',
+    marginBottom: 8,
+  },
+  timeSelector: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  timeButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F2F2F7',
+    borderWidth: 1,
+    borderColor: '#D1D1D6',
+  },
+  selectedTimeButton: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  timeButtonText: {
+    fontSize: 14,
+    color: '#000000',
+    fontWeight: '500',
+  },
+  selectedTimeButtonText: {
+    color: '#FFFFFF',
+  },
+  chunkSizeSelector: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  chunkSizeButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F2F2F7',
+    borderWidth: 1,
+    borderColor: '#D1D1D6',
+  },
+  selectedChunkSizeButton: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  chunkSizeButtonText: {
+    fontSize: 14,
+    color: '#000000',
+    fontWeight: '500',
+  },
+  selectedChunkSizeButtonText: {
+    color: '#FFFFFF',
+  },
+  processingContainer: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+  },
+  processingStatus: {
+    fontSize: 14,
+    color: '#007AFF',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  processingCompleteContainer: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#F0F9FF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#34C759',
+  },
+  successIcon: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  processingCompleteInfo: {
+    alignItems: 'center',
+  },
+  processingCompleteTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  processingCompleteText: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  keyConceptsContainer: {
+    marginTop: 12,
+    width: '100%',
+  },
+  keyConceptsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  keyConceptsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  keyConceptTag: {
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#2196F3',
+  },
+  keyConceptText: {
+    fontSize: 12,
+    color: '#1976D2',
+    fontWeight: '500',
+  },
+  moreConcepts: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontStyle: 'italic',
+    alignSelf: 'center',
+  },
+  contentInputContainer: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E1E5E9',
+  },
+  contentInputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  contentInputSubtext: {
+    fontSize: 12,
+    fontWeight: '400',
+    marginBottom: 12,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  contentInput: {
+    minHeight: 120,
+    textAlignVertical: 'top',
+  },
+  contentInputHint: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 8,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  processButton: {
+    marginTop: 16,
+    backgroundColor: '#007AFF',
   },
 });

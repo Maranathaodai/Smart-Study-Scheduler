@@ -9,6 +9,12 @@ export interface Course {
   color: string;
   difficulty: 'easy' | 'medium' | 'hard';
   priority: number; // 1-10 scale for fine-tuning
+  // New AI-powered content fields
+  processedChunks?: StudyChunk[];
+  totalEstimatedTime?: number;
+  keyConcepts?: string[];
+  processingStatus?: 'pending' | 'processing' | 'completed' | 'failed';
+  lastProcessed?: Date;
 }
 
 export interface CourseFile {
@@ -17,15 +23,24 @@ export interface CourseFile {
   type: string;
   size: number;
   uploadedAt: Date;
+  uri?: string; // File URI from DocumentPicker
 }
 
 export interface StudySession {
   id: string;
   courseId: string;
   date: Date;
-  slides: number;
+  slides: number; // Keep for backward compatibility
   completed: boolean;
-  completedSlides: number;
+  completedSlides: number; // Keep for backward compatibility
+  // New AI-powered session fields
+  chunks: StudyChunk[];
+  totalEstimatedTime: number;
+  completedChunks: number;
+  currentChunkIndex: number;
+  sessionProgress: number; // 0-100 percentage
+  learningObjectives: string[];
+  assessmentQuestions: string[];
 }
 
 export interface StudyPlan {
@@ -54,5 +69,57 @@ export interface User {
     maxSlidesPerSession?: number;
     scheduleStartDate?: string; // ISO
     scheduleEndDate?: string;   // ISO
+    // New AI-powered preferences
+    maxStudyTimePerSession?: number; // minutes
+    preferredChunkSize?: 'small' | 'medium' | 'large';
+    enableAIChunking?: boolean;
+    manualChunkAdjustment?: boolean;
+  };
+}
+
+// New types for AI-powered content processing
+export interface ProcessedContent {
+  id: string;
+  type: 'slide' | 'section' | 'concept' | 'image' | 'text';
+  title: string;
+  content: string;
+  complexity: number; // 1-10 scale
+  estimatedTime: number; // minutes
+  dependencies: string[]; // prerequisite concepts
+  keywords: string[];
+  visualElements?: VisualElement[];
+  sourceFile: string;
+  pageNumber?: number;
+  completed?: boolean; // Whether this content has been completed
+}
+
+export interface VisualElement {
+  type: 'image' | 'diagram' | 'chart' | 'table';
+  description: string;
+  altText?: string;
+}
+
+export interface StudyChunk {
+  id: string;
+  title: string;
+  content: ProcessedContent[];
+  estimatedTime: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+  prerequisites: string[];
+  learningObjectives: string[];
+  assessmentQuestions: string[];
+  keywords: string[];
+  order: number;
+}
+
+export interface ContentProcessingResult {
+  chunks: StudyChunk[];
+  totalEstimatedTime: number;
+  keyConcepts: string[];
+  processingMetadata: {
+    fileType: string;
+    processingTime: number;
+    aiAnalysisUsed: boolean;
+    manualAdjustments: boolean;
   };
 }

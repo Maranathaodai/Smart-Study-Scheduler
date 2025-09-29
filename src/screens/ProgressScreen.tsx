@@ -12,23 +12,21 @@ import {
 } from 'react-native';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { ProgressBar } from '../components/ui/ProgressBar';
-import { dummyCourses, dummySessions } from '../lib/dummy-data';
+// Removed dummy data imports
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { useProgress } from '../contexts/ProgressContext';
 
 const { width } = Dimensions.get('window');
 
 export default function ProgressScreen() {
   const { colors } = useTheme();
+  const { weeklyProgress, overallProgress, courseProgress } = useProgress();
   const [achievementAnimations] = useState({
     firstSteps: new Animated.Value(1),
     streakMaster: new Animated.Value(1),
     dedicatedLearner: new Animated.Value(1),
   });
-  const totalSlides = dummyCourses.reduce((acc, course) => acc + course.totalSlides, 0);
-  const completedSlides = dummyCourses.reduce((acc, course) => acc + course.completedSlides, 0);
-  const completedSessions = dummySessions.filter(session => session.completed).length;
-  const totalSessions = dummySessions.length;
 
   const animateAchievement = (achievementKey: string) => {
     const animation = achievementAnimations[achievementKey];
@@ -55,15 +53,6 @@ export default function ProgressScreen() {
     );
   };
 
-  const weeklyProgress = [
-    { day: 'Mon', completed: 2, total: 3 },
-    { day: 'Tue', completed: 3, total: 3 },
-    { day: 'Wed', completed: 1, total: 2 },
-    { day: 'Thu', completed: 2, total: 2 },
-    { day: 'Fri', completed: 1, total: 3 },
-    { day: 'Sat', completed: 0, total: 1 },
-    { day: 'Sun', completed: 1, total: 1 },
-  ];
 
   const [selectedDay, setSelectedDay] = useState<{ day: string; completed: number; total: number } | null>(null);
   const [isDayModalVisible, setIsDayModalVisible] = useState(false);
@@ -78,10 +67,6 @@ export default function ProgressScreen() {
     setSelectedDay(null);
   };
 
-  const courseProgress = dummyCourses.map(course => ({
-    ...course,
-    progress: (course.completedSlides / course.totalSlides) * 100,
-  }));
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
@@ -98,23 +83,23 @@ export default function ProgressScreen() {
           </CardHeader>
           <CardContent>
             <ProgressBar
-              value={completedSlides}
-              max={totalSlides}
+              value={overallProgress.completedSessions}
+              max={overallProgress.totalSessions}
               showLabel
               size="lg"
             />
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.text }]}>{completedSlides}</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Slides Completed</Text>
+                <Text style={[styles.statValue, { color: colors.text }]}>{overallProgress.completedSessions}</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Sessions Completed</Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.text }]}>{totalSlides - completedSlides}</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Slides Remaining</Text>
+                <Text style={[styles.statValue, { color: colors.text }]}>{overallProgress.totalSessions - overallProgress.completedSessions}</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Sessions Remaining</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={[styles.statValue, { color: colors.text }]}>
-                  {Math.round((completedSlides / totalSlides) * 100)}%
+                  {Math.round(overallProgress.completionPercentage)}%
                 </Text>
                 <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Complete</Text>
               </View>
@@ -185,12 +170,12 @@ export default function ProgressScreen() {
                       <View
                         style={[
                           styles.modalBarFill,
-                          { width: `${(selectedDay.completed / selectedDay.total) * 100}%` },
+                          { width: `${selectedDay.total > 0 ? (selectedDay.completed / selectedDay.total) * 100 : 0}%` },
                         ]}
                       />
                     </View>
                     <Text style={[styles.modalPercent, { color: colors.text }]}>
-                      {Math.round((selectedDay.completed / selectedDay.total) * 100)}%
+                      {selectedDay.total > 0 ? Math.round((selectedDay.completed / selectedDay.total) * 100) : 0}%
                     </Text>
                   </View>
                   <View style={styles.modalLegend}>
@@ -215,19 +200,21 @@ export default function ProgressScreen() {
           </CardHeader>
           <CardContent>
             {courseProgress.map((course, index) => (
-              <View key={course.id} style={styles.courseProgressItem}>
+              <View key={course.courseId} style={styles.courseProgressItem}>
                 <View style={styles.courseInfo}>
-                  <Text style={[styles.courseName, { color: colors.text }]}>{course.name}</Text>
-                  <Text style={[styles.courseCategory, { color: colors.textSecondary }]}>{course.category}</Text>
+                  <Text style={[styles.courseName, { color: colors.text }]}>{course.courseName}</Text>
+                  <Text style={[styles.courseCategory, { color: colors.textSecondary }]}>
+                    {course.completedSessions}/{course.totalSessions} sessions
+                  </Text>
                 </View>
                 <View style={styles.courseProgress}>
                   <ProgressBar
-                    value={course.completedSlides}
-                    max={course.totalSlides}
+                    value={course.completedSessions}
+                    max={course.totalSessions}
                     size="sm"
                   />
                   <Text style={[styles.coursePercentage, { color: colors.text }]}>
-                    {Math.round(course.progress)}%
+                    {Math.round(course.progressPercentage)}%
                   </Text>
                 </View>
               </View>

@@ -13,18 +13,76 @@ import { useNavigation } from '@react-navigation/native';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { ProgressBar } from '../components/ui/ProgressBar';
-import { dummyUser, dummyCourses, dummySessions } from '../lib/dummy-data';
+// Removed dummy data imports
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUser } from '../contexts/UserContext';
+import { useAuth } from '../contexts/SupabaseAuthContext';
 import { useGoals } from '../contexts/GoalsContext';
+import { useProgress } from '../contexts/ProgressContext';
+import { courseStorage } from '../lib/courseStorage';
+import { Course, StudySession } from '../lib/types';
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
-  const { user } = useUser();
+  const { user: localUserData } = useUser();
+  const { user: supabaseUser } = useAuth();
   const { getTodaysGoals, getCompletionRate } = useGoals();
+  const { overallProgress, studyStatistics, weeklyProgress } = useProgress();
+  
+  // State for courses and sessions
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Load courses and sessions on component mount
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [loadedCourses, loadedSessions] = await Promise.all([
+        courseStorage.loadCourses(),
+        courseStorage.loadStudySessions()
+      ]);
+      setCourses(loadedCourses);
+      setSessions(loadedSessions);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get today's study sessions
+  const getTodaysSessions = () => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    return sessions.filter(session => {
+      const sessionDate = new Date(session.date).toISOString().split('T')[0];
+      return sessionDate === todayStr;
+    });
+  };
+
+  // Get today's primary session (first session or most important one)
+  const getTodaysPrimarySession = () => {
+    const todaysSessions = getTodaysSessions();
+    if (todaysSessions.length === 0) return null;
+    
+    // Return the first incomplete session, or the first session if all are complete
+    const incompleteSession = todaysSessions.find(session => !session.completed);
+    return incompleteSession || todaysSessions[0];
+  };
+
+  // Get course for a session
+  const getCourseForSession = (session: StudySession) => {
+    return courses.find(course => course.id === session.courseId);
+  };
   
   const dynamicStyles = StyleSheet.create({
     secondaryAction: {
@@ -53,24 +111,50 @@ export default function DashboardScreen() {
   });
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
+  const [currentTime, setCurrentTime] = useState(new Date());
   
-  const totalSlides = dummyCourses.reduce((acc, course) => acc + course.totalSlides, 0);
-  const completedSlides = dummyCourses.reduce((acc, course) => acc + course.completedSlides, 0);
-  const todaySession = dummySessions[0];
-  const todayCourse = dummyCourses.find(c => c.id === todaySession.courseId);
+  // Use actual user data from ProgressContext
+  const totalSlides = overallProgress.totalSlides;
+  const completedSlides = overallProgress.completedSlides;
+  const todaySession = getTodaysPrimarySession();
+  const todayCourse = todaySession ? getCourseForSession(todaySession) : null;
   
-  // Smart insights
-  const progressPercentage = totalSlides > 0 ? Math.round((completedSlides / totalSlides) * 100) : 0;
-  const streakDays = 7; // Mock streak data
-  const weeklyGoal = 5; // Mock weekly goal
-  const completedThisWeek = 3; // Mock weekly progress
+  // Smart insights using actual data
+  const progressPercentage = overallProgress.completionPercentage;
+  const streakDays = studyStatistics.currentStreak;
+  const weeklyGoal = 5; // This could be user-configurable in the future
+  const completedThisWeek = weeklyProgress.reduce((sum, day) => sum + day.completed, 0);
   
-  // Time-aware greeting
+  // Enhanced time-aware greeting with more personalized messages
   const getTimeBasedGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
+    const userName = supabaseUser?.user_metadata?.full_name?.split(' ')[0] || 'there';
+    
+    if (hour >= 5 && hour < 12) {
+      const morningGreetings = [
+        "Good morning",
+        "Rise and shine",
+        "Morning",
+        "Good day"
+      ];
+      return morningGreetings[Math.floor(Math.random() * morningGreetings.length)];
+    } else if (hour >= 12 && hour < 17) {
+      const afternoonGreetings = [
+        "Good afternoon",
+        "Afternoon",
+        "Good day"
+      ];
+      return afternoonGreetings[Math.floor(Math.random() * afternoonGreetings.length)];
+    } else if (hour >= 17 && hour < 21) {
+      const eveningGreetings = [
+        "Good evening",
+        "Evening",
+        "Good evening"
+      ];
+      return eveningGreetings[Math.floor(Math.random() * eveningGreetings.length)];
+    } else {
+      return "Good night";
+    }
   };
   
   // Smart progress message
@@ -119,6 +203,13 @@ export default function DashboardScreen() {
     
     // Change quote on login/component mount
     getRandomQuote();
+    
+    // Update time every minute
+    const timeInterval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(timeInterval);
   }, []);
 
   return (
@@ -133,10 +224,13 @@ export default function DashboardScreen() {
         ]}
       >
         <Text style={[styles.greeting, { color: colors.text }]}>
-          {getTimeBasedGreeting()}, {user.name.split(' ')[0]} 👋
+          {getTimeBasedGreeting()}, {supabaseUser?.user_metadata?.full_name?.split(' ')[0] || 'there'} 👋
         </Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          {format(new Date(), 'EEEE, MMMM do')}
+          {format(currentTime, 'EEEE, MMMM do, yyyy')}
+        </Text>
+        <Text style={[styles.timeText, { color: colors.textSecondary }]}>
+          {format(currentTime, 'h:mm a')}
         </Text>
         <Text style={[styles.readyText, { color: '#8E8E93' }]}>
           Ready to learn?
@@ -187,7 +281,7 @@ export default function DashboardScreen() {
                 <Ionicons name="book" size={24} color="#007AFF" />
               </View>
               <Text style={dynamicStyles.actionText}>My Courses</Text>
-              <Text style={dynamicStyles.actionSubtext}>{dummyCourses.length} active</Text>
+              <Text style={dynamicStyles.actionSubtext}>{courses.length} active</Text>
             </TouchableOpacity>
             
             <TouchableOpacity
@@ -233,7 +327,7 @@ export default function DashboardScreen() {
                     {getTodaysGoals().filter(g => g.completed).length} of {getTodaysGoals().length} completed
                   </Text>
                   <Text style={[styles.goalsProgressPercent, { color: colors.primary }]}>
-                    {Math.round((getTodaysGoals().filter(g => g.completed).length / getTodaysGoals().length) * 100)}%
+                    {getTodaysGoals().length > 0 ? Math.round((getTodaysGoals().filter(g => g.completed).length / getTodaysGoals().length) * 100) : 0}%
                   </Text>
                 </View>
                 {getTodaysGoals().slice(0, 3).map((goal) => (
@@ -284,19 +378,34 @@ export default function DashboardScreen() {
               </View>
             </CardTitle>
             <View style={styles.sessionMetaRight}>
-              <Text style={[styles.slideCount, { color: colors.textSecondary }]}>{todaySession.slides} slides</Text>
+              <Text style={[styles.slideCount, { color: colors.textSecondary }]}>
+                {todaySession ? `${todaySession.slides} slides` : 'No session'}
+              </Text>
             </View>
           </CardHeader>
           <CardContent style={styles.sessionCardContent}>
-            <Text style={[styles.courseName, { color: colors.text }]}>
-              {todayCourse?.name}
-            </Text>
-            <Text style={[styles.sessionDescription, { color: colors.textSecondary }]}>
-              {progressPercentage > 50 
-                ? "You're on fire! Let's keep this momentum going! 🔥" 
-                : "Ready to dive in? Every slide brings you closer to mastery! 💪"
-              }
-            </Text>
+            {todaySession && todayCourse ? (
+              <>
+                <Text style={[styles.courseName, { color: colors.text }]}>
+                  {todayCourse.name}
+                </Text>
+                <Text style={[styles.sessionDescription, { color: colors.textSecondary }]}>
+                  {progressPercentage > 50 
+                    ? "You're on fire! Let's keep this momentum going! 🔥" 
+                    : "Ready to dive in? Every slide brings you closer to mastery! 💪"
+                  }
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.courseName, { color: colors.text }]}>
+                  No study session scheduled
+                </Text>
+                <Text style={[styles.sessionDescription, { color: colors.textSecondary }]}>
+                  Add a course to get started with your study journey! 🚀
+                </Text>
+              </>
+            )}
             <View style={styles.sessionActions}>
               <Button 
                 title="Start Session"
@@ -441,6 +550,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6B7280',
     fontWeight: '500',
+    marginBottom: 4,
+  },
+  timeText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '400',
     marginBottom: 8,
   },
   readyText: {
