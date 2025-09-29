@@ -4,7 +4,7 @@ export const CONFIG = {
   // OpenRouter API Configuration
   OPENROUTER: {
     API_URL: 'https://openrouter.ai/api/v1',
-    API_KEY: process.env.EXPO_PUBLIC_OPENROUTER_API_KEY || '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',
+    API_KEY: process.env.EXPO_PUBLIC_OPENROUTER_API_KEY || '',
     // Free GPT-style models available on OpenRouter
     MODELS: {
       TEXT_ANALYSIS: 'google/gemma-2-9b-it:free',
