@@ -16,6 +16,12 @@ export const CONFIG = {
     MAX_RETRY_ATTEMPTS: 2,
   },
 
+  // Supabase Configuration
+  SUPABASE: {
+    URL: process.env.EXPO_PUBLIC_SUPABASE_URL || '',
+    ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
+  },
+
   // Content Processing Configuration
   CONTENT_PROCESSING: {
     MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
@@ -41,16 +47,29 @@ export const CONFIG = {
 };
 
 // Validation function to check if required configuration is present
-export function validateConfig(): { isValid: boolean; missingKeys: string[] } {
+export function validateConfig(): { isValid: boolean; missingKeys: string[]; warnings: string[] } {
   const missingKeys: string[] = [];
+  const warnings: string[] = [];
 
+  // Check OpenRouter API Key
   if (!CONFIG.OPENROUTER.API_KEY) {
     missingKeys.push('EXPO_PUBLIC_OPENROUTER_API_KEY');
+  } else if (CONFIG.OPENROUTER.API_KEY.includes('your_api_key_here')) {
+    warnings.push('OpenRouter API key is still set to placeholder value. Please update with your actual API key from https://openrouter.ai/');
+  }
+
+  // Check Supabase configuration
+  if (!CONFIG.SUPABASE.URL) {
+    missingKeys.push('EXPO_PUBLIC_SUPABASE_URL');
+  }
+  if (!CONFIG.SUPABASE.ANON_KEY) {
+    missingKeys.push('EXPO_PUBLIC_SUPABASE_ANON_KEY');
   }
 
   return {
     isValid: missingKeys.length === 0,
     missingKeys,
+    warnings,
   };
 }
 
@@ -59,9 +78,51 @@ export function getOpenRouterApiKey(): string {
   const apiKey = CONFIG.OPENROUTER.API_KEY;
   
   if (!apiKey) {
-    console.warn('OpenRouter API key not found. Please set EXPO_PUBLIC_OPENROUTER_API_KEY in your environment variables.');
+    console.warn('⚠️ OpenRouter API key not found. Please set EXPO_PUBLIC_OPENROUTER_API_KEY in your .env file.');
+    console.warn('💡 Get your API key from: https://openrouter.ai/');
+    return '';
+  }
+  
+  if (apiKey.includes('your_api_key_here')) {
+    console.warn('⚠️ OpenRouter API key is still set to placeholder value.');
+    console.warn('💡 Please replace it with your actual API key from https://openrouter.ai/');
     return '';
   }
   
   return apiKey;
+}
+
+// Helper function to get Supabase configuration
+export function getSupabaseConfig(): { url: string; anonKey: string } {
+  return {
+    url: CONFIG.SUPABASE.URL,
+    anonKey: CONFIG.SUPABASE.ANON_KEY,
+  };
+}
+
+// Development helper to print configuration status
+export function printConfigStatus(): void {
+  console.log('📋 Smart Study Scheduler Configuration Status:');
+  
+  const validation = validateConfig();
+  
+  if (validation.isValid && validation.warnings.length === 0) {
+    console.log('✅ All configuration is valid and ready!');
+  } else {
+    if (validation.missingKeys.length > 0) {
+      console.log('❌ Missing required environment variables:');
+      validation.missingKeys.forEach(key => {
+        console.log(`   - ${key}`);
+      });
+    }
+    
+    if (validation.warnings.length > 0) {
+      console.log('⚠️ Configuration warnings:');
+      validation.warnings.forEach(warning => {
+        console.log(`   - ${warning}`);
+      });
+    }
+    
+    console.log('\n📖 Setup instructions: Check ENV_SETUP.md for details');
+  }
 }
