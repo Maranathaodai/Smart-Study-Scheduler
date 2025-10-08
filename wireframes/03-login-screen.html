@@ -13,159 +13,313 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f5;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        
-        .phone-frame {
-            width: 300px;
-            height: 600px;
-            background: #000;
-            border-radius: 30px;
-            padding: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        
-        .screen {
-            width: 100%;
-            height: 100%;
-            background: #fff;
-            border-radius: 25px;
-            overflow: hidden;
+            background: #F2F2F7;
+            width: 440px;
+            height: 956px;
+            margin: 0 auto;
             position: relative;
-            display: flex;
-            flex-direction: column;
+            overflow: hidden;
         }
         
         .status-bar {
-            height: 30px;
-            background: #f0f0f0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 44px;
+            background: transparent;
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0 20px;
-            font-size: 12px;
-            font-weight: 600;
+            z-index: 10;
         }
         
-        .content {
-            flex: 1;
-            padding: 40px 30px;
+        .time {
+            font-size: 17px;
+            font-weight: 600;
+            color: #000000;
+        }
+        
+        .status-icons {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .signal-icon {
+            width: 18px;
+            height: 12px;
+            background: #000000;
+            border-radius: 2px;
+            position: relative;
+        }
+        
+        .signal-icon::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 2px;
+            width: 14px;
+            height: 8px;
+            background: #000000;
+            border-radius: 1px;
+        }
+        
+        .signal-icon::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: 4px;
+            width: 10px;
+            height: 6px;
+            background: #000000;
+            border-radius: 1px;
+        }
+        
+        .wifi-icon {
+            width: 16px;
+            height: 12px;
+            background: #000000;
+            border-radius: 2px;
+        }
+        
+        .battery-icon {
+            width: 24px;
+            height: 12px;
+            border: 1px solid #000000;
+            border-radius: 2px;
+            position: relative;
+        }
+        
+        .battery-icon::after {
+            content: '';
+            position: absolute;
+            right: -3px;
+            top: 3px;
+            width: 2px;
+            height: 6px;
+            background: #000000;
+            border-radius: 0 1px 1px 0;
+        }
+        
+        .battery-fill {
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            width: 20px;
+            height: 8px;
+            background: #000000;
+            border-radius: 1px;
+        }
+        
+        .container {
+            padding: 80px 30px 0;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
         }
         
         .welcome-title {
-            font-size: 28px;
-            font-weight: bold;
-            color: #333;
-            text-align: center;
-            margin-bottom: 40px;
+            font-size: 32px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 12px;
+            letter-spacing: -0.8px;
         }
         
-        .input-group {
-            margin-bottom: 20px;
+        .welcome-subtitle {
+            font-size: 16px;
+            font-weight: 400;
+            color: #8E8E93;
+            line-height: 1.4;
         }
         
-        .input-label {
-            font-size: 14px;
-            color: #666;
+        .form-container {
+            flex: 1;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: #000000;
             margin-bottom: 8px;
             display: block;
         }
         
-        .input-field {
+        .form-input {
             width: 100%;
-            padding: 16px;
-            border: 2px solid #e0e0e0;
+            height: 50px;
+            background: #FFFFFF;
+            border: 1px solid #E5E5EA;
             border-radius: 12px;
+            padding: 0 16px;
             font-size: 16px;
-            background: #f8f8f8;
-            transition: border-color 0.3s;
+            color: #000000;
+            transition: border-color 0.2s ease;
         }
         
-        .input-field:focus {
+        .form-input:focus {
             outline: none;
             border-color: #007AFF;
-            background: white;
         }
         
-        .login-btn {
+        .form-input::placeholder {
+            color: #8E8E93;
+        }
+        
+        .password-container {
+            position: relative;
+        }
+        
+        .eye-icon {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            background: #8E8E93;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .eye-icon::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 12px;
+            height: 8px;
+            background: #FFFFFF;
+            border-radius: 6px 6px 0 0;
+        }
+        
+        .eye-icon::after {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            width: 8px;
+            height: 6px;
+            background: #8E8E93;
+            border-radius: 4px 4px 0 0;
+        }
+        
+        .signin-button {
             width: 100%;
+            height: 50px;
             background: #007AFF;
-            color: white;
-            padding: 16px;
+            border: none;
             border-radius: 12px;
+            color: #FFFFFF;
             font-size: 16px;
             font-weight: 600;
-            border: none;
-            margin: 20px 0;
+            margin-bottom: 16px;
             cursor: pointer;
+            transition: background-color 0.2s ease;
         }
         
-        .divider {
-            text-align: center;
-            margin: 20px 0;
-            color: #666;
-            font-size: 14px;
+        .signin-button:hover {
+            background: #0056CC;
         }
         
-        .signup-btn {
+        .forgot-password-button {
             width: 100%;
-            background: #f0f0f0;
-            color: #333;
-            padding: 16px;
+            height: 50px;
+            background: #FFFFFF;
+            border: 1px solid #007AFF;
             border-radius: 12px;
+            color: #007AFF;
             font-size: 16px;
             font-weight: 600;
-            border: none;
-            margin-bottom: 20px;
+            margin-bottom: 40px;
             cursor: pointer;
+            transition: background-color 0.2s ease;
         }
         
-        .forgot-password {
+        .forgot-password-button:hover {
+            background: #F0F8FF;
+        }
+        
+        .signup-container {
             text-align: center;
+            margin-top: auto;
+            padding-bottom: 40px;
+        }
+        
+        .signup-text {
+            font-size: 16px;
+            color: #8E8E93;
+            margin-bottom: 16px;
+        }
+        
+        .signup-button {
+            width: 100%;
+            height: 50px;
+            background: #FFFFFF;
+            border: 1px solid #007AFF;
+            border-radius: 12px;
             color: #007AFF;
-            font-size: 14px;
-            text-decoration: none;
-            margin-top: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .signup-button:hover {
+            background: #F0F8FF;
         }
     </style>
 </head>
 <body>
-    <div class="phone-frame">
-        <div class="screen">
-            <div class="status-bar">
-                <span>9:41</span>
-                <span>100%</span>
+    <div class="status-bar">
+        <div class="time">1:43</div>
+        <div class="status-icons">
+            <div class="signal-icon"></div>
+            <div class="wifi-icon"></div>
+            <div class="battery-icon">
+                <div class="battery-fill"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <h1 class="welcome-title">Welcome Back</h1>
+            <p class="welcome-subtitle">Sign in to continue your study journey</p>
+        </div>
+        
+        <div class="form-container">
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-input" placeholder="Enter your email">
             </div>
             
-            <div class="content">
-                <h1 class="welcome-title">Welcome Back</h1>
-                
-                <div class="input-group">
-                    <label class="input-label">Email or Full Name</label>
-                    <input class="input-field" type="text" placeholder="Enter your email or full name">
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <div class="password-container">
+                    <input type="password" class="form-input" placeholder="Enter your password">
+                    <div class="eye-icon"></div>
                 </div>
-                
-                <div class="input-group">
-                    <label class="input-label">Password</label>
-                    <input class="input-field" type="password" placeholder="Enter your password">
-                </div>
-                
-                <button class="login-btn">Sign In</button>
-                
-                <div class="divider">Don't have an account?</div>
-                
-                <button class="signup-btn">Sign Up</button>
-                
-                <a href="#" class="forgot-password">Forgot Password?</a>
             </div>
+            
+            <button class="signin-button">Sign In</button>
+            <button class="forgot-password-button">Forgot Password?</button>
+        </div>
+        
+        <div class="signup-container">
+            <p class="signup-text">Don't have an account?</p>
+            <button class="signup-button">Sign Up</button>
         </div>
     </div>
 </body>

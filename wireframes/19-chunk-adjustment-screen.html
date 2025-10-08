@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chunk Adjustment Screen - Smart Study Scheduler</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .phone-frame {
+            width: 300px;
+            height: 600px;
+            background: #000;
+            border-radius: 30px;
+            padding: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 25px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .status-bar {
+            height: 30px;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border-bottom: 2px dashed #ccc;
+        }
+        
+        .header {
+            height: 50px;
+            background: #f0f0f0;
+            border-bottom: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: #333;
+            position: relative;
+        }
+        
+        .back-button {
+            position: absolute;
+            left: 20px;
+            width: 30px;
+            height: 30px;
+            background: #f0f0f0;
+            border: 2px dashed #333;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .save-button {
+            position: absolute;
+            right: 20px;
+            background: #007AFF;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .course-info {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .course-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 6px;
+        }
+        
+        .course-status {
+            font-size: 12px;
+            color: #007AFF;
+            background: #f0f0f0;
+            padding: 4px 10px;
+            border: 2px dashed #007AFF;
+            border-radius: 10px;
+            display: inline-block;
+        }
+        
+        .ai-section {
+            background: #f8f8f8;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-icon {
+            width: 25px;
+            height: 25px;
+            background: #007AFF;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+        
+        .ai-toggle {
+            background: white;
+            border: 2px dashed #34C759;
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .ai-info {
+            flex: 1;
+        }
+        
+        .ai-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 3px;
+        }
+        
+        .ai-desc {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.3;
+        }
+        
+        .toggle-switch {
+            width: 45px;
+            height: 22px;
+            background: #34C759;
+            border-radius: 11px;
+            position: relative;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 9px;
+            transform: translateX(21px);
+        }
+        
+        .complexity-section {
+            background: #f8f8f8;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .slider-item {
+            margin-bottom: 15px;
+        }
+        
+        .slider-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .slider-label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .slider-value {
+            color: #007AFF;
+        }
+        
+        .slider-container {
+            background: white;
+            border: 2px dashed #007AFF;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 5px;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 6px;
+            background: #ddd;
+            border-radius: 3px;
+            position: relative;
+        }
+        
+        .slider-track {
+            height: 100%;
+            width: 60%;
+            background: #007AFF;
+            border-radius: 3px;
+        }
+        
+        .slider-thumb {
+            position: absolute;
+            top: -4px;
+            right: 0;
+            width: 14px;
+            height: 14px;
+            background: white;
+            border: 2px solid #007AFF;
+            border-radius: 7px;
+            transform: translateX(50%);
+        }
+        
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .time-section {
+            background: #f8f8f8;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .time-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .time-item {
+            background: white;
+            border: 2px dashed #34C759;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+        
+        .time-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+        
+        .time-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .time-unit {
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .preview-section {
+            background: #f8f8f8;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .preview-item {
+            background: white;
+            border: 2px dashed #ddd;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .preview-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        
+        .preview-number {
+            background: #007AFF;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .preview-time {
+            font-size: 11px;
+            color: #007AFF;
+            font-weight: bold;
+        }
+        
+        .preview-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 3px;
+        }
+        
+        .preview-desc {
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .action-button {
+            background: #007AFF;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        
+        .action-button.secondary {
+            background: white;
+            color: #007AFF;
+            border: 2px solid #007AFF;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="screen">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>100%</span>
+            </div>
+            
+            <div class="header">
+                <div class="back-button">←</div>
+                <span>Chunk Settings</span>
+                <button class="save-button">Save</button>
+            </div>
+            
+            <div class="content">
+                <div class="course-info">
+                    <h2 class="course-name">Mathematics - Calculus</h2>
+                    <span class="course-status">AI Processing Complete</span>
+                </div>
+                
+                <div class="ai-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">🤖</span>
+                        AI Optimization
+                    </h3>
+                    
+                    <div class="ai-toggle">
+                        <div class="ai-info">
+                            <div class="ai-title">Smart Chunking</div>
+                            <div class="ai-desc">Let AI optimize chunk sizes based on content</div>
+                        </div>
+                        <div class="toggle-switch">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="complexity-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">⚙️</span>
+                        Difficulty Settings
+                    </h3>
+                    
+                    <div class="slider-item">
+                        <div class="slider-label">
+                            <span>Content Complexity</span>
+                            <span class="slider-value">Medium</span>
+                        </div>
+                        <div class="slider-container">
+                            <div class="slider">
+                                <div class="slider-track"></div>
+                                <div class="slider-thumb"></div>
+                            </div>
+                        </div>
+                        <div class="slider-labels">
+                            <span>Basic</span>
+                            <span>Advanced</span>
+                        </div>
+                    </div>
+                    
+                    <div class="slider-item">
+                        <div class="slider-label">
+                            <span>Learning Pace</span>
+                            <span class="slider-value">Moderate</span>
+                        </div>
+                        <div class="slider-container">
+                            <div class="slider">
+                                <div class="slider-track"></div>
+                                <div class="slider-thumb"></div>
+                            </div>
+                        </div>
+                        <div class="slider-labels">
+                            <span>Slow</span>
+                            <span>Fast</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="time-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">⏱️</span>
+                        Time Preferences
+                    </h3>
+                    
+                    <div class="time-grid">
+                        <div class="time-item">
+                            <div class="time-label">Session Length</div>
+                            <div class="time-value">45</div>
+                            <div class="time-unit">minutes</div>
+                        </div>
+                        <div class="time-item">
+                            <div class="time-label">Break Duration</div>
+                            <div class="time-value">10</div>
+                            <div class="time-unit">minutes</div>
+                        </div>
+                        <div class="time-item">
+                            <div class="time-label">Daily Goal</div>
+                            <div class="time-value">2</div>
+                            <div class="time-unit">hours</div>
+                        </div>
+                        <div class="time-item">
+                            <div class="time-label">Total Chunks</div>
+                            <div class="time-value">12</div>
+                            <div class="time-unit">sections</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="preview-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">👁️</span>
+                        Preview Schedule
+                    </h3>
+                    
+                    <div class="preview-item">
+                        <div class="preview-header">
+                            <div class="preview-number">1</div>
+                            <span class="preview-time">45 min</span>
+                        </div>
+                        <div class="preview-title">Introduction to Limits</div>
+                        <div class="preview-desc">Basic concepts and definition of limits</div>
+                    </div>
+                    
+                    <div class="preview-item">
+                        <div class="preview-header">
+                            <div class="preview-number">2</div>
+                            <span class="preview-time">50 min</span>
+                        </div>
+                        <div class="preview-title">Limit Properties & Theorems</div>
+                        <div class="preview-desc">Essential limit laws and applications</div>
+                    </div>
+                    
+                    <div class="preview-item">
+                        <div class="preview-header">
+                            <div class="preview-number">3</div>
+                            <span class="preview-time">40 min</span>
+                        </div>
+                        <div class="preview-title">Continuity and Discontinuity</div>
+                        <div class="preview-desc">Understanding continuous functions</div>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="action-button secondary">Reset to AI</button>
+                    <button class="action-button">Apply Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .phone-frame {
+            width: 320px;
+            height: 640px;
+            background: linear-gradient(145deg, #2c3e50, #34495e);
+            border-radius: 35px;
+            padding: 8px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1);
+            position: relative;
+        }
+        
+        .phone-frame::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 6px;
+            background: #34495e;
+            border-radius: 3px;
+        }
+        
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 30px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+        }
+        
+        .status-bar {
+            height: 35px;
+            background: linear-gradient(180deg, #667eea 0%, #5a6fd8 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .header {
+            height: 60px;
+            background: linear-gradient(180deg, #667eea 0%, #5a6fd8 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 20px;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        }
+        
+        .back-button {
+            position: absolute;
+            left: 20px;
+            width: 36px;
+            height: 36px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .save-button {
+            position: absolute;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 18px;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+        }
+        
+        .course-info {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .course-name {
+            font-size: 22px;
+            font-weight: 800;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .course-status {
+            font-size: 15px;
+            color: #667eea;
+            font-weight: 500;
+            background: rgba(102, 126, 234, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        
+        .ai-section {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            border: 1px solid #e9ecef;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-icon {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .ai-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+            margin-bottom: 20px;
+        }
+        
+        .ai-info {
+            flex: 1;
+        }
+        
+        .ai-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .ai-desc {
+            font-size: 14px;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 55px;
+            height: 28px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-switch.inactive {
+            background: #dee2e6;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            transform: translateX(27px);
+        }
+        
+        .toggle-switch.inactive .toggle-slider {
+            transform: translateX(0);
+        }
+        
+        .complexity-section {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            border: 1px solid #e9ecef;
+        }
+        
+        .complexity-slider {
+            margin-bottom: 25px;
+        }
+        
+        .slider-label {
+            font-size: 15px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .slider-value {
+            color: #667eea;
+            font-weight: 700;
+        }
+        
+        .slider-container {
+            position: relative;
+            margin-bottom: 10px;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            outline: none;
+            position: relative;
+        }
+        
+        .slider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 60%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 4px;
+        }
+        
+        .slider-thumb {
+            position: absolute;
+            top: 50%;
+            left: 60%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: white;
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 8px;
+        }
+        
+        .time-section {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            border: 1px solid #e9ecef;
+        }
+        
+        .time-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .time-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+            text-align: center;
+        }
+        
+        .time-label {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .time-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .time-unit {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .preview-section {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            border: 1px solid #e9ecef;
+        }
+        
+        .preview-item {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+        
+        .preview-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .preview-number {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        
+        .preview-time {
+            font-size: 13px;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .preview-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .preview-desc {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 25px;
+        }
+        
+        .action-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .action-button.secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        
+        .action-button.secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="screen">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>●●●●● 100%</span>
+            </div>
+            
+            <div class="header">
+                <div class="back-button">←</div>
+                <span>Chunk Settings</span>
+                <button class="save-button">Save</button>
+            </div>
+            
+            <div class="content">
+                <div class="course-info">
+                    <h2 class="course-name">Mathematics - Calculus</h2>
+                    <span class="course-status">AI Processing Complete</span>
+                </div>
+                
+                <div class="ai-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">🤖</span>
+                        AI Optimization
+                    </h3>
+                    
+                    <div class="ai-toggle">
+                        <div class="ai-info">
+                            <div class="ai-title">Smart Chunking</div>
+                            <div class="ai-desc">Let AI optimize chunk sizes based on content complexity</div>
+                        </div>
+                        <div class="toggle-switch">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="complexity-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">⚙️</span>
+                        Difficulty Settings
+                    </h3>
+                    
+                    <div class="complexity-slider">
+                        <div class="slider-label">
+                            <span>Content Complexity</span>
+                            <span class="slider-value">Medium</span>
+                        </div>
+                        <div class="slider-container">
+                            <div class="slider"></div>
+                            <div class="slider-thumb"></div>
+                        </div>
+                        <div class="slider-labels">
+                            <span>Basic</span>
+                            <span>Advanced</span>
+                        </div>
+                    </div>
+                    
+                    <div class="complexity-slider">
+                        <div class="slider-label">
+                            <span>Learning Pace</span>
+                            <span class="slider-value">Moderate</span>
+                        </div>
+                        <div class="slider-container">
+                            <div class="slider"></div>
+                            <div class="slider-thumb"></div>
+                        </div>
+                        <div class="slider-labels">
+                            <span>Slow</span>
+                            <span>Fast</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="time-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">⏱️</span>
+                        Time Preferences
+                    </h3>
+                    
+                    <div class="time-grid">
+                        <div class="time-item">
+                            <div class="time-label">Session Length</div>
+                            <div class="time-value">45</div>
+                            <div class="time-unit">minutes</div>
+                        </div>
+                        <div class="time-item">
+                            <div class="time-label">Break Duration</div>
+                            <div class="time-value">10</div>
+                            <div class="time-unit">minutes</div>
+                        </div>
+                        <div class="time-item">
+                            <div class="time-label">Daily Goal</div>
+                            <div class="time-value">2</div>
+                            <div class="time-unit">hours</div>
+                        </div>
+                        <div class="time-item">
+                            <div class="time-label">Total Chunks</div>
+                            <div class="time-value">12</div>
+                            <div class="time-unit">sections</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="preview-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">👁️</span>
+                        Preview Schedule
+                    </h3>
+                    
+                    <div class="preview-item">
+                        <div class="preview-header">
+                            <div class="preview-number">1</div>
+                            <span class="preview-time">45 min</span>
+                        </div>
+                        <div class="preview-title">Introduction to Limits</div>
+                        <div class="preview-desc">Basic concepts and definition of limits</div>
+                    </div>
+                    
+                    <div class="preview-item">
+                        <div class="preview-header">
+                            <div class="preview-number">2</div>
+                            <span class="preview-time">50 min</span>
+                        </div>
+                        <div class="preview-title">Limit Properties & Theorems</div>
+                        <div class="preview-desc">Essential limit laws and their applications</div>
+                    </div>
+                    
+                    <div class="preview-item">
+                        <div class="preview-header">
+                            <div class="preview-number">3</div>
+                            <span class="preview-time">40 min</span>
+                        </div>
+                        <div class="preview-title">Continuity and Discontinuity</div>
+                        <div class="preview-desc">Understanding continuous functions</div>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="action-button secondary">Reset to AI</button>
+                    <button class="action-button">Apply Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

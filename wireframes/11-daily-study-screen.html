@@ -13,111 +13,269 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f5;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        
-        .phone-frame {
-            width: 300px;
-            height: 600px;
-            background: #000;
-            border-radius: 30px;
-            padding: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        
-        .screen {
-            width: 100%;
-            height: 100%;
-            background: #fff;
-            border-radius: 25px;
-            overflow: hidden;
+            background: #F2F2F7;
+            width: 440px;
+            height: 956px;
+            margin: 0 auto;
             position: relative;
-            display: flex;
-            flex-direction: column;
+            overflow: hidden;
         }
         
         .status-bar {
-            height: 30px;
-            background: #f0f0f0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 44px;
+            background: transparent;
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0 20px;
-            font-size: 12px;
-            font-weight: 600;
+            z-index: 10;
         }
         
-        .header {
-            height: 60px;
-            background: #f8f8f8;
-            border-bottom: 2px solid #ddd;
+        .time {
+            font-size: 17px;
+            font-weight: 600;
+            color: #000000;
+        }
+        
+        .status-icons {
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 18px;
+            gap: 5px;
+        }
+        
+        .signal-icon {
+            width: 18px;
+            height: 12px;
+            background: #000000;
+            border-radius: 2px;
             position: relative;
         }
         
-        .back-button {
+        .signal-icon::before {
+            content: '';
             position: absolute;
-            left: 20px;
-            width: 30px;
-            height: 30px;
-            background: #333;
-            border-radius: 15px;
+            top: -2px;
+            left: 2px;
+            width: 14px;
+            height: 8px;
+            background: #000000;
+            border-radius: 1px;
+        }
+        
+        .signal-icon::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: 4px;
+            width: 10px;
+            height: 6px;
+            background: #000000;
+            border-radius: 1px;
+        }
+        
+        .wifi-icon {
+            width: 16px;
+            height: 12px;
+            background: #000000;
+            border-radius: 2px;
+        }
+        
+        .battery-icon {
+            width: 24px;
+            height: 12px;
+            border: 1px solid #000000;
+            border-radius: 2px;
+            position: relative;
+        }
+        
+        .battery-icon::after {
+            content: '';
+            position: absolute;
+            right: -3px;
+            top: 3px;
+            width: 2px;
+            height: 6px;
+            background: #000000;
+            border-radius: 0 1px 1px 0;
+        }
+        
+        .battery-fill {
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            width: 20px;
+            height: 8px;
+            background: #000000;
+            border-radius: 1px;
+        }
+        
+        .header {
+            position: fixed;
+            top: 44px;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #FFFFFF;
             display: flex;
             align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 16px;
+            padding: 0 20px;
+            border-bottom: 1px solid #E5E5EA;
+            z-index: 5;
+        }
+        
+        .back-button {
+            width: 40px;
+            height: 40px;
+            background: transparent;
+            border: none;
+            color: #007AFF;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .course-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .course-dot {
+            width: 8px;
+            height: 8px;
+            background: #007AFF;
+            border-radius: 4px;
+        }
+        
+        .course-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #000000;
+        }
+        
+        .container {
+            padding: 120px 20px 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
         
         .content {
             flex: 1;
-            padding: 20px;
             overflow-y: auto;
+            padding-bottom: 100px;
         }
         
-        .course-title {
+        .card {
+            background: #FFFFFF;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .course-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .course-icon {
+            width: 50px;
+            height: 50px;
+            background: #007AFF;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FFFFFF;
+            font-size: 24px;
+        }
+        
+        .course-details {
+            flex: 1;
+        }
+        
+        .course-name {
             font-size: 20px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 10px;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 4px;
+        }
+        
+        .session-info {
+            font-size: 14px;
+            font-weight: 400;
+            color: #8E8E93;
+        }
+        
+        .progress-section {
+            margin-bottom: 20px;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .progress-text {
+            font-size: 14px;
+            font-weight: 500;
+            color: #000000;
+        }
+        
+        .progress-count {
+            font-size: 14px;
+            font-weight: 400;
+            color: #8E8E93;
         }
         
         .progress-bar {
             width: 100%;
             height: 8px;
-            background: #e0e0e0;
+            background: #E5E5EA;
             border-radius: 4px;
             overflow: hidden;
-            margin: 15px 0;
         }
         
         .progress-fill {
             height: 100%;
-            background: #333;
-            width: 30%;
+            background: #007AFF;
+            border-radius: 4px;
+            width: 0%;
         }
         
-        .progress-text {
-            text-align: center;
-            color: #666;
-            font-size: 14px;
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
             margin-bottom: 20px;
         }
         
-        .study-chunk {
-            background: #f8f8f8;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 20px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            font-weight: 400;
+            color: #8E8E93;
+        }
+        
+        .study-content {
             margin-bottom: 20px;
         }
         
@@ -125,140 +283,181 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .chunk-number {
-            background: #333;
-            color: white;
-            width: 30px;
-            height: 30px;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        
-        .chunk-duration {
-            font-size: 12px;
-            color: #666;
+            margin-bottom: 16px;
         }
         
         .chunk-title {
             font-size: 18px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 10px;
+            font-weight: 600;
+            color: #000000;
         }
         
-        .chunk-description {
+        .chunk-time {
             font-size: 14px;
-            color: #666;
+            font-weight: 400;
+            color: #8E8E93;
+        }
+        
+        .chunk-text {
+            font-size: 16px;
+            font-weight: 400;
+            color: #000000;
+            line-height: 1.5;
             margin-bottom: 20px;
-            line-height: 1.4;
         }
         
-        .button {
-            background: #333;
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: bold;
-            width: 100%;
+        .key-terms {
+            margin-bottom: 20px;
         }
         
-        .tips-card {
-            background: #f8f8f8;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
+        .key-terms-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .key-terms-icon {
+            font-size: 16px;
+        }
+        
+        .terms-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .term-tag {
+            background: #F0F8FF;
+            border: 1px solid #007AFF;
+            border-radius: 16px;
+            padding: 6px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #007AFF;
+        }
+        
+        .navigation-buttons {
+            display: flex;
+            gap: 12px;
             margin-top: 20px;
         }
         
-        .tips-title {
+        .nav-button {
+            flex: 1;
+            height: 50px;
+            border-radius: 12px;
+            border: 1px solid #E5E5EA;
+            background: #FFFFFF;
+            color: #8E8E93;
             font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #333;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
         
-        .tip-item {
-            display: flex;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #f0f0f0;
+        .nav-button.next {
+            background: #007AFF;
+            color: #FFFFFF;
+            border-color: #007AFF;
         }
         
-        .tip-item:last-child {
-            border-bottom: none;
+        .nav-button.next:hover {
+            background: #0056CC;
         }
         
-        .tip-icon {
-            width: 20px;
-            height: 20px;
-            background: #ccc;
-            border-radius: 10px;
-            margin-right: 15px;
-        }
-        
-        .tip-text {
-            font-size: 14px;
-            color: #333;
+        .nav-button.previous:hover {
+            background: #F2F2F7;
         }
     </style>
 </head>
 <body>
-    <div class="phone-frame">
-        <div class="screen">
-            <div class="status-bar">
-                <span>9:41</span>
-                <span>100%</span>
+    <div class="status-bar">
+        <div class="time">1:49</div>
+        <div class="status-icons">
+            <div class="signal-icon"></div>
+            <div class="wifi-icon"></div>
+            <div class="battery-icon">
+                <div class="battery-fill"></div>
             </div>
-            
-            <div class="header">
-                <div class="back-button">←</div>
-                <span>Study Session</span>
-            </div>
-            
-            <div class="content">
-                <h2 class="course-title">Mathematics - Calculus</h2>
-                
-                <div class="progress-bar">
-                    <div class="progress-fill"></div>
-                </div>
-                <p class="progress-text">Chunk 1 of 3</p>
-                
-                <!-- Study Chunk -->
-                <div class="study-chunk">
-                    <div class="chunk-header">
-                        <div class="chunk-number">1</div>
-                        <span class="chunk-duration">25 min</span>
+        </div>
+    </div>
+    
+    <div class="header">
+        <button class="back-button">←</button>
+        <div class="course-info">
+            <div class="course-dot"></div>
+            <h1 class="course-title">DCIT 302</h1>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="content">
+            <div class="card">
+                <div class="course-header">
+                    <div class="course-icon">📚</div>
+                    <div class="course-details">
+                        <h2 class="course-name">DCIT 302</h2>
+                        <p class="session-info">Today's session • 2 chunks • 54 min</p>
                     </div>
-                    <h3 class="chunk-title">Introduction to Derivatives</h3>
-                    <p class="chunk-description">
-                        Learn the fundamental concepts of derivatives and their applications in calculus. This section covers basic differentiation rules and practical examples.
-                    </p>
-                    <div class="button">Start Studying</div>
                 </div>
                 
-                <!-- Study Tips -->
-                <div class="tips-card">
-                    <h3 class="tips-title">Study Tips</h3>
-                    <div class="tip-item">
-                        <div class="tip-icon"></div>
-                        <span class="tip-text">Take breaks every 25 minutes</span>
+                <div class="progress-section">
+                    <div class="progress-header">
+                        <span class="progress-text">0% Complete</span>
+                        <span class="progress-count">0/2</span>
                     </div>
-                    <div class="tip-item">
-                        <div class="tip-icon"></div>
-                        <span class="tip-text">Review key concepts after each chunk</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
                     </div>
-                    <div class="tip-item">
-                        <div class="tip-icon"></div>
-                        <span class="tip-text">Take notes to reinforce learning</span>
+                </div>
+                
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Completed</div>
                     </div>
+                    <div class="stat-item">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Remaining</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">0%</div>
+                        <div class="stat-label">Progress</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card study-content">
+                <div class="chunk-header">
+                    <h3 class="chunk-title">Chunk 1 of 2</h3>
+                    <span class="chunk-time">• 26 min</span>
+                </div>
+                
+                <div class="chunk-text">
+                    Good day to you, sir/madam, When I first applied for this job, I was asked to run a test to check my internet speed. Upon submitting the test result, I was told I didn't meet the minimum requirement, so I had to look for an alternative internet connection. Fortunately for me, I knew someone with a Turbonet device which gave me sufficient bandwidth to pass the test. I gave him some money to top up his data plan. Now, I had passed one challenge.
+                </div>
+                
+                <div class="key-terms">
+                    <h4 class="key-terms-title">
+                        <span class="key-terms-icon">🔑</span>
+                        Key Terms
+                    </h4>
+                    <div class="terms-grid">
+                        <span class="term-tag">test</span>
+                        <span class="term-tag">internet</span>
+                        <span class="term-tag">gave</span>
+                        <span class="term-tag">applied</span>
+                        <span class="term-tag">submitting</span>
+                    </div>
+                </div>
+                
+                <div class="navigation-buttons">
+                    <button class="nav-button previous">Previous</button>
+                    <button class="nav-button next">Next</button>
                 </div>
             </div>
         </div>

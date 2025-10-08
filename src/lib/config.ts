@@ -5,11 +5,15 @@ export const CONFIG = {
   OPENROUTER: {
     API_URL: 'https://openrouter.ai/api/v1',
     API_KEY: process.env.EXPO_PUBLIC_OPENROUTER_API_KEY || '',
-    // Free GPT-style models available on OpenRouter
+    // Working free models available on OpenRouter
     MODELS: {
-      TEXT_ANALYSIS: 'google/gemma-2-9b-it:free',
-      CONTENT_CHUNKING: 'google/gemma-2-9b-it:free',
-      GENERAL: 'google/gemma-2-9b-it:free',
+      TEXT_ANALYSIS: 'google/gemma-2-9b-it:free', // Working model
+      CONTENT_CHUNKING: 'google/gemma-2-9b-it:free', // Use working model instead of mistral
+      GENERAL: 'google/gemma-2-9b-it:free', // Working model
+      PDF_PROCESSING: 'anthropic/claude-3-haiku:beta', // Excellent vision model (potentially free)
+      PDF_PROCESSING_FALLBACK: 'anthropic/claude-3-haiku', // Excellent vision model (low cost)
+      IMAGE_ANALYSIS: 'anthropic/claude-3-haiku:beta', // Excellent vision model
+      VISION_PROCESSING: 'mistralai/pixtral-12b', // Most comprehensive vision model
     },
     // Enable AI processing with GPT-style models
     ENABLE_OFFLINE_MODE: false,
@@ -80,15 +84,20 @@ export function getOpenRouterApiKey(): string {
   if (!apiKey) {
     console.warn('⚠️ OpenRouter API key not found. Please set EXPO_PUBLIC_OPENROUTER_API_KEY in your .env file.');
     console.warn('💡 Get your API key from: https://openrouter.ai/');
+    
+    // For development/testing, return empty string to trigger fallback
     return '';
   }
   
   if (apiKey.includes('your_api_key_here')) {
     console.warn('⚠️ OpenRouter API key is still set to placeholder value.');
     console.warn('💡 Please replace it with your actual API key from https://openrouter.ai/');
+    
+    // For development/testing, return empty string to trigger fallback
     return '';
   }
   
+  console.log('✅ OpenRouter API key loaded successfully');
   return apiKey;
 }
 

@@ -13,6 +13,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { authService } from '../lib/supabaseAuthService';
 
 interface AuthScreenProps {
   onComplete: () => void;
@@ -32,14 +33,74 @@ export default function AuthScreen({ onComplete }: AuthScreenProps) {
       return;
     }
 
+    // Basic validation
+    if (!isLogin && password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long');
+      return;
+    }
+
+    if (!email.includes('@')) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
     setLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      if (isLogin) {
+        console.log('🔑 Attempting login...');
+        await authService.signIn({ email, password });
+        console.log('✅ Login successful');
+      } else {
+        console.log('👤 Attempting signup...');
+        await authService.signUp({ email, password, full_name: name });
+        console.log('✅ Signup successful');
+        
+        // Show success message and switch to login mode
+        Alert.alert(
+          'Account Created!', 
+          'Account Creation Successful',
+          [{ 
+            text: 'OK', 
+            onPress: () => {
+              // Clear the form and switch to login mode
+              setPassword('');
+              setName('');
+              setIsLogin(true);
+            }
+          }]
+        );
+        return; // Don't call onComplete(), stay on auth screen for login
+      }
+      
       onComplete();
-    }, 1500);
+      
+    } catch (error: any) {
+      console.error('Authentication error:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = error.message;
+      
+      if (error.message.includes('invalid_credentials')) {
+        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+      } else if (error.message.includes('email_address_invalid')) {
+        errorMessage = 'Please enter a valid email address.';
+      } else if (error.message.includes('weak_password')) {
+        errorMessage = 'Password is too weak. Please use at least 6 characters.';
+      } else if (error.message.includes('email_address_not_authorized')) {
+        errorMessage = 'This email domain is not authorized. Please use a different email.';
+      } else if (error.message.includes('signup_disabled')) {
+        errorMessage = 'Account creation is currently disabled. Please contact support.';
+      } else if (error.message.includes('email not confirmed')) {
+        errorMessage = 'Please check your email and click the confirmation link before signing in.';
+      }
+      
+      Alert.alert('Authentication Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   return (
     <KeyboardAvoidingView
@@ -63,6 +124,8 @@ export default function AuthScreen({ onComplete }: AuthScreenProps) {
         </View>
 
         <View style={styles.form}>
+
+          {/* Traditional Email/Password Form */}
           {!isLogin && (
             <Input
               label="Full Name"

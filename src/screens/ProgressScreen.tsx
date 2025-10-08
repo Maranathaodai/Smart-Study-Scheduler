@@ -10,6 +10,7 @@ import {
   Animated,
   Modal,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { ProgressBar } from '../components/ui/ProgressBar';
 // Removed dummy data imports
@@ -21,12 +22,19 @@ const { width } = Dimensions.get('window');
 
 export default function ProgressScreen() {
   const { colors } = useTheme();
-  const { weeklyProgress, overallProgress, courseProgress } = useProgress();
+  const { weeklyProgress, overallProgress, courseProgress, refreshProgress } = useProgress();
   const [achievementAnimations] = useState({
     firstSteps: new Animated.Value(1),
     streakMaster: new Animated.Value(1),
     dedicatedLearner: new Animated.Value(1),
   });
+
+  // Refresh progress data when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshProgress();
+    }, [refreshProgress])
+  );
 
   const animateAchievement = (achievementKey: string) => {
     const animation = achievementAnimations[achievementKey];

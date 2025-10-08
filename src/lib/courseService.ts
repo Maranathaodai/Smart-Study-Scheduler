@@ -9,7 +9,21 @@ export class CourseService {
   async uploadCourseFiles(): Promise<CourseFile[]> {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'image/*', 'text/plain', 'text/markdown'],
+        type: [
+          'application/pdf', 
+          'image/*', 
+          'text/plain', 
+          'text/markdown',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+          'application/msword', // .doc
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+          'application/vnd.ms-powerpoint', // .ppt
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+          'application/vnd.ms-excel', // .xls
+          'text/csv',
+          'text/html',
+          'application/json'
+        ],
         copyToCacheDirectory: true,
         multiple: true,
       });
@@ -54,6 +68,7 @@ export class CourseService {
       let totalProcessingTime = 0;
 
       // Process each file
+      const fileErrors: string[] = [];
       for (const file of course.files) {
         try {
           // Get file path (in a real app, you'd store the actual file path)
@@ -66,13 +81,42 @@ export class CourseService {
           totalProcessingTime += result.processingMetadata.processingTime;
         } catch (fileError) {
           console.error(`Failed to process file ${file.name}:`, fileError);
+          fileErrors.push(`${file.name}: ${fileError.message}`);
           // Continue with other files
         }
       }
 
       if (allChunks.length === 0) {
         course.processingStatus = 'failed';
-        throw new Error('No content could be processed from the uploaded files');
+        
+        // Check if the error is specifically about PDF processing
+        const hasPDFProcessingError = fileErrors.some(error => 
+          error.includes('📄 PDF Processing Not Available') || 
+          error.includes('Easy Solutions')
+        );
+        
+        if (hasPDFProcessingError) {
+          // Provide enhanced guidance for PDF processing issues
+          const errorMessage = `📄 PDF Processing Issue
+
+Your PDF file couldn't be processed automatically, but there are easy alternatives:
+
+🚀 QUICK SOLUTIONS:
+1. Copy text from your PDF and use "Manual Text Input" 
+2. Save your PDF as a text (.txt) file and upload that
+3. Take screenshots of important pages and upload as images
+
+💡 TIP: Text files (.txt) and manual text input work perfectly!
+
+Original errors:
+${fileErrors.join('\n')}`;
+          throw new Error(errorMessage);
+        }
+        
+        const errorMessage = fileErrors.length > 0 
+          ? `No content could be processed from the uploaded files. Errors:\n${fileErrors.join('\n')}`
+          : 'No content could be processed from the uploaded files';
+        throw new Error(errorMessage);
       }
 
       // Update course with processed content

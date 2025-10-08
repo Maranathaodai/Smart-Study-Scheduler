@@ -13,7 +13,6 @@ import { AuthProvider, useAuth } from './src/contexts/SupabaseAuthContext';
 // Import screens
 import SplashScreen from './src/screens/SplashScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
-import AuthScreen from './src/screens/AuthScreen';
 import SupabaseLoginScreen from './src/screens/SupabaseLoginScreen';
 import SupabaseSignUpScreen from './src/screens/SupabaseSignUpScreen';
 import SupabaseForgotPasswordScreen from './src/screens/SupabaseForgotPasswordScreen';
@@ -47,16 +46,6 @@ function AuthNavigator() {
   );
 }
 
-function AuthWrapper({ navigation }) {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="AuthStart">
-        {(props) => <AuthScreen {...props} onComplete={() => navigation.replace('MainTabs')} />}
-      </Stack.Screen>
-      <Stack.Screen name="ForgotPassword" component={SupabaseForgotPasswordScreen} />
-    </Stack.Navigator>
-  );
-}
 
 function MainTabs() {
   const { colors } = useTheme();
@@ -108,22 +97,20 @@ function AppContent() {
   }
 
   return (
-    <ThemeProvider>
-      <UserProvider>
-        <GoalsProvider>
-          <ProgressProvider>
-            {appState === 'splash' ? (
-              <SplashScreen onComplete={() => setAppState('onboarding')} />
-            ) : appState === 'onboarding' ? (
-              <OnboardingScreen onComplete={() => setAppState('auth')} />
-            ) : !user ? (
-              // Show authentication screens if user is not logged in
-              <NavigationContainer>
+    <NavigationContainer>
+      <ThemeProvider>
+        <UserProvider>
+          <GoalsProvider>
+            <ProgressProvider>
+              {appState === 'splash' ? (
+                <SplashScreen onComplete={() => setAppState('onboarding')} />
+              ) : appState === 'onboarding' ? (
+                <OnboardingScreen onComplete={() => setAppState('auth')} />
+              ) : !user ? (
+                // Show authentication screens if user is not logged in
                 <AuthNavigator />
-              </NavigationContainer>
-            ) : (
-              // Show main app if user is logged in
-              <NavigationContainer>
+              ) : (
+                // Show main app if user is logged in
                 <Stack.Navigator screenOptions={{ headerShown: false }}>
                   <Stack.Screen name="MainTabs" component={MainTabs} />
                   <Stack.Screen name="AddCourse" component={AddCourseScreen} />
@@ -137,13 +124,13 @@ function AppContent() {
                   <Stack.Screen name="Goals" component={GoalsScreen} />
                   <Stack.Screen name="ChunkAdjustment" component={ChunkAdjustmentScreen} />
                 </Stack.Navigator>
-              </NavigationContainer>
-            )}
-            <StatusBar style="auto" />
-          </ProgressProvider>
-        </GoalsProvider>
-      </UserProvider>
-    </ThemeProvider>
+              )}
+              <StatusBar style="auto" />
+            </ProgressProvider>
+          </GoalsProvider>
+        </UserProvider>
+      </ThemeProvider>
+    </NavigationContainer>
   );
 }
 

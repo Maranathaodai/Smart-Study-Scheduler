@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Splash Screen - Smart Study Scheduler</title>
+    <title>Splash Screen - High Fidelity Wireframe</title>
     <style>
         * {
             margin: 0;
@@ -27,7 +27,7 @@
             background: #000;
             border-radius: 30px;
             padding: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
         
         .screen {
@@ -49,56 +49,174 @@
             left: 0;
             right: 0;
             height: 30px;
-            background: #f0f0f0;
+            background: transparent;
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0 20px;
             font-size: 12px;
-            font-weight: 600;
+            font-weight: bold;
+            color: #000;
+        }
+        
+        .status-icons {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        
+        .signal-icon {
+            width: 12px;
+            height: 8px;
+            background: #000;
+            border-radius: 1px;
+            position: relative;
+        }
+        
+        .signal-icon::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 1px;
+            width: 10px;
+            height: 6px;
+            background: #000;
+            border-radius: 1px;
+        }
+        
+        .signal-icon::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 2px;
+            width: 8px;
+            height: 4px;
+            background: #000;
+            border-radius: 1px;
+        }
+        
+        .wifi-icon {
+            width: 12px;
+            height: 8px;
+            background: #000;
+            border-radius: 1px;
+        }
+        
+        .battery-icon {
+            width: 18px;
+            height: 8px;
+            border: 1px solid #000;
+            border-radius: 1px;
+            position: relative;
+        }
+        
+        .battery-icon::after {
+            content: '';
+            position: absolute;
+            right: -2px;
+            top: 2px;
+            width: 1px;
+            height: 4px;
+            background: #000;
+            border-radius: 0 1px 1px 0;
+        }
+        
+        .battery-fill {
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            width: 14px;
+            height: 4px;
+            background: #000;
+            border-radius: 1px;
         }
         
         .app-logo {
-            width: 100px;
-            height: 100px;
-            background: linear-gradient(135deg, #007AFF, #34C759);
-            border-radius: 50px;
-            margin-bottom: 30px;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #007AFF 0%, #34C759 100%);
+            border-radius: 20px;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
+            position: relative;
+            box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3);
+        }
+        
+        .logo-inner {
+            width: 60px;
+            height: 60px;
+            background: #ffffff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .logo-text {
+            font-size: 20px;
+            font-weight: 800;
+            color: #007AFF;
+            letter-spacing: -0.5px;
         }
         
         .app-title {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: bold;
-            color: #333;
-            margin-bottom: 10px;
+            color: #000;
+            margin-bottom: 8px;
             text-align: center;
+            letter-spacing: -0.6px;
         }
         
         .app-subtitle {
-            font-size: 16px;
-            color: #666;
+            font-size: 14px;
+            color: #8E8E93;
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
+            line-height: 1.4;
+            max-width: 200px;
         }
         
         .loading-indicator {
-            width: 40px;
-            height: 40px;
-            border: 3px solid #f0f0f0;
-            border-top: 3px solid #007AFF;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
         }
         
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .loading-dot {
+            width: 6px;
+            height: 6px;
+            background: #C7C7CC;
+            border-radius: 50%;
+            animation: loading 1.4s infinite ease-in-out;
+        }
+        
+        .loading-dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+        
+        .loading-dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+        
+        @keyframes loading {
+            0%, 80%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .version-info {
+            font-size: 12px;
+            color: #8E8E93;
+            text-align: center;
         }
     </style>
 </head>
@@ -106,14 +224,32 @@
     <div class="phone-frame">
         <div class="screen">
             <div class="status-bar">
-                <span>9:41</span>
-                <span>100%</span>
+                <div class="time">1:43</div>
+                <div class="status-icons">
+                    <div class="signal-icon"></div>
+                    <div class="wifi-icon"></div>
+                    <div class="battery-icon">
+                        <div class="battery-fill"></div>
+                    </div>
+                </div>
             </div>
             
-            <div class="app-logo">SS</div>
-            <h1 class="app-title">Smart Study Scheduler</h1>
-            <p class="app-subtitle">AI-Powered Study Planning</p>
-            <div class="loading-indicator"></div>
+            <div class="app-logo">
+                <div class="logo-inner">
+                    <div class="logo-text">SS</div>
+                </div>
+            </div>
+            
+            <div class="app-title">Smart Study Scheduler</div>
+            <div class="app-subtitle">Your personal learning companion</div>
+            
+            <div class="loading-indicator">
+                <div class="loading-dot"></div>
+                <div class="loading-dot"></div>
+                <div class="loading-dot"></div>
+            </div>
+            
+            <div class="version-info">Version 1.0.0</div>
         </div>
     </div>
 </body>

@@ -15,38 +15,113 @@ import { MarkdownRenderer } from '../components/ui/MarkdownRenderer';
 // Removed dummy data imports
 import { StudySession, StudyChunk } from '../lib/types';
 import { Ionicons } from '@expo/vector-icons';
+import { useProgress } from '../contexts/ProgressContext';
+import { courseStorage } from '../lib/courseStorage';
+import { format } from 'date-fns';
 
 export default function DailyStudyScreen({ route }: any) {
+  console.log('🎯 DailyStudyScreen LOADED with route params:', route?.params ? 'YES' : 'NO');
+  
   const navigation = useNavigation();
+
+  // Format AI response for display
+  const formatAIResponseForDisplay = (content: string): string => {
+    try {
+      if (!content) return 'No content available';
+      
+      const cleaned = content.trim();
+      
+      // Try to extract JSON if it exists
+      if (cleaned.includes('{') && cleaned.includes('}')) {
+        const jsonStart = cleaned.indexOf('{');
+        const jsonEnd = cleaned.lastIndexOf('}') + 1;
+        const jsonStr = cleaned.substring(jsonStart, jsonEnd);
+        
+        try {
+          const parsed = JSON.parse(jsonStr);
+          
+          if (parsed.title && parsed.content) {
+            let formattedContent = parsed.content;
+            
+            // Clean up escaped characters
+            formattedContent = formattedContent.replace(/\\n/g, '\n');
+            formattedContent = formattedContent.replace(/\\"/g, '"');
+            formattedContent = formattedContent.replace(/\\\//g, '/');
+            
+            return `# ${parsed.title}\n\n${formattedContent}`;
+          }
+        } catch (e) {
+          // JSON parsing failed, continue with original content
+        }
+      }
+      
+      // If it's markdown content, clean it up
+      if (cleaned.includes('##') || cleaned.includes('**')) {
+        return cleaned.replace(/\\n/g, '\n').replace(/\\"/g, '"');
+      }
+      
+      return cleaned;
+      
+    } catch (error) {
+      return content;
+    }
+  };
+  const { updateSessionCompletion } = useProgress();
   const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
   const [session, setSession] = useState<StudySession | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
   
   // Get course and session from navigation params
-  const course = route?.params?.course;
-  const initialSession = route?.params?.session as StudySession;
+  const rawCourse = route?.params?.course;
+  const rawSession = route?.params?.session;
   
-  // Initialize session state
+  // Initialize session state from rawSession only once
   useEffect(() => {
+    // Deserialize the course object (handle createdAt) inside useEffect to avoid recreating on every render
+    const course = rawCourse ? {
+      ...rawCourse,
+      createdAt: typeof rawCourse.createdAt === 'string' ? new Date(rawCourse.createdAt) : rawCourse.createdAt,
+    } : null;
+    
     if (!course) {
       Alert.alert('Error', 'No course found. Please select a course first.');
       navigation.goBack();
       return;
     }
     
-    if (initialSession) {
-      setSession(initialSession);
+    if (rawSession) {
+      // Deserialize the session object (handle date) only when setting state
+      const deserializedSession = {
+        ...rawSession,
+        date: typeof rawSession.date === 'string' ? new Date(rawSession.date) : rawSession.date,
+      };
+      setSession(deserializedSession);
     } else {
       // If no session provided, show error and go back
       Alert.alert('Error', 'No study session found. Please select a course and session first.');
       navigation.goBack();
     }
-  }, [initialSession, course, navigation]);
+  }, [rawCourse, rawSession, navigation]); // Use rawCourse instead of course object
+  
+  // Create course object for rendering (only when rawCourse exists)
+  const course = rawCourse ? {
+    ...rawCourse,
+    createdAt: typeof rawCourse.createdAt === 'string' ? new Date(rawCourse.createdAt) : rawCourse.createdAt,
+  } : null;
 
   // Debug logging
   console.log('DailyStudyScreen - Course:', course?.name);
   console.log('DailyStudyScreen - Session:', session);
   console.log('DailyStudyScreen - Session chunks:', session?.chunks?.length);
+  console.log('DailyStudyScreen - Session date:', session?.date);
+  console.log('DailyStudyScreen - Session total time:', session?.totalEstimatedTime);
+  
+  // Additional debugging for chunks
+  if (session?.chunks) {
+    session.chunks.forEach((chunk, index) => {
+      console.log(`  Chunk ${index + 1}: "${chunk.title}" - ${chunk.estimatedTime}min`);
+    });
+  }
 
   if (!session) {
     return (
@@ -64,7 +139,7 @@ export default function DailyStudyScreen({ route }: any) {
     ? ((session.completedChunks + (currentChunkIndex > session.currentChunkIndex ? 1 : 0)) / totalChunks) * 100
     : (currentChunkIndex / totalChunks) * 100;
 
-  const handleNextChunk = () => {
+  const handleNextChunk = async () => {
     if (currentChunkIndex < totalChunks - 1) {
       setCurrentChunkIndex(currentChunkIndex + 1);
       // Update session progress
@@ -77,21 +152,55 @@ export default function DailyStudyScreen({ route }: any) {
       }
     } else {
       setIsCompleted(true);
+      
+      // Get total sessions for this course to provide better completion messaging
+      let nextSessionMessage = 'Check your study schedule for upcoming sessions.';
+      try {
+        const allSessions = await courseStorage.loadStudySessions();
+        const courseSessions = allSessions
+          .filter(s => s.courseId === session?.courseId)
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        
+        const currentSessionIndex = courseSessions.findIndex(s => s.id === session?.id);
+        const nextSession = courseSessions[currentSessionIndex + 1];
+        
+        if (nextSession) {
+          nextSessionMessage = `Your next session is scheduled for ${format(new Date(nextSession.date), 'MMM d, yyyy')}.`;
+        } else {
+          nextSessionMessage = 'You\'ve completed all sessions for this course! 🎊';
+        }
+      } catch (error) {
+        console.log('Could not determine next session info:', error);
+      }
+      
       Alert.alert(
         'Congratulations! 🎉',
-        'You have completed today\'s study session!',
+        `You have completed this study session!\n\n${nextSessionMessage}`,
         [
           {
             text: 'Great!',
-            onPress: () => {
-              // Mark session as completed
-              setSession(prev => ({
-                ...prev!,
-                completed: true,
-                completedChunks: totalChunks,
-                sessionProgress: 100,
-              }));
-              navigation.goBack();
+            onPress: async () => {
+              try {
+                // Mark session as completed
+                setSession(prev => ({
+                  ...prev!,
+                  completed: true,
+                  completedChunks: totalChunks,
+                  sessionProgress: 100,
+                }));
+
+                // Update progress context and persist to storage
+                if (session) {
+                  updateSessionCompletion(session.id, true, session.slides);
+                  await courseStorage.updateSessionProgress(session.id, 100);
+                  console.log('✅ Session completion persisted');
+                }
+
+                navigation.goBack();
+              } catch (error) {
+                console.error('❌ Error saving session completion:', error);
+                navigation.goBack(); // Still go back even if save fails
+              }
             },
           },
         ]
@@ -121,15 +230,28 @@ export default function DailyStudyScreen({ route }: any) {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Complete',
-          onPress: () => {
-            setIsCompleted(true);
-            setSession(prev => ({
-              ...prev!,
-              completed: true,
-              completedChunks: totalChunks,
-              sessionProgress: 100,
-            }));
-            navigation.goBack();
+          onPress: async () => {
+            try {
+              setIsCompleted(true);
+              setSession(prev => ({
+                ...prev!,
+                completed: true,
+                completedChunks: totalChunks,
+                sessionProgress: 100,
+              }));
+
+              // Update progress context and persist to storage
+              if (session) {
+                updateSessionCompletion(session.id, true, session.slides);
+                await courseStorage.updateSessionProgress(session.id, 100);
+                console.log('✅ Session manually completed and persisted');
+              }
+
+              navigation.goBack();
+            } catch (error) {
+              console.error('❌ Error saving session completion:', error);
+              navigation.goBack(); // Still go back even if save fails
+            }
           },
         },
       ]
@@ -166,9 +288,9 @@ export default function DailyStudyScreen({ route }: any) {
           </CardHeader>
           <CardContent>
             <Text style={styles.sessionInfo}>
-              Today's session • {hasChunks ? `${totalChunks} chunks` : `${totalChunks} slides`}
+              Study Session • {format(session.date, 'MMM d, yyyy')} • {hasChunks ? `${totalChunks} chunks` : `${totalChunks} slides`}
               {hasChunks && session.totalEstimatedTime && (
-                <Text> • {Math.round(session.totalEstimatedTime)} min</Text>
+                <Text> • {Math.round(session.totalEstimatedTime)} min total</Text>
               )}
             </Text>
             
@@ -179,6 +301,19 @@ export default function DailyStudyScreen({ route }: any) {
                 showLabel
                 size="lg"
               />
+              
+              {/* Enhanced progress information */}
+              <View style={styles.progressDetails}>
+                <Text style={styles.progressText}>
+                  {hasChunks ? 'Chunk' : 'Slide'} {currentChunkIndex + 1} of {totalChunks}
+                </Text>
+                <Text style={styles.progressSubtext}>
+                  {hasChunks 
+                    ? `${session.completedChunks} completed • ${totalChunks - session.completedChunks} remaining`
+                    : `${Math.round(progress)}% complete`
+                  }
+                </Text>
+              </View>
             </View>
           </CardContent>
         </Card>
@@ -204,7 +339,7 @@ export default function DailyStudyScreen({ route }: any) {
                   {/* Main Content */}
                   <View style={styles.contentSection}>
                     <Text style={styles.contentText}>
-                      {currentChunk.content[0]?.content || 'Content will be displayed here'}
+                      {formatAIResponseForDisplay(currentChunk.content[0]?.content || 'Content will be displayed here')}
                     </Text>
                   </View>
                   
@@ -258,7 +393,7 @@ export default function DailyStudyScreen({ route }: any) {
               ) : (
                 <ScrollView style={styles.contentScrollView} showsVerticalScrollIndicator={false}>
                   <MarkdownRenderer 
-                    content={currentChunk?.content?.[0]?.content || 'No content available for this chunk.'} 
+                    content={formatAIResponseForDisplay(currentChunk?.content?.[0]?.content || 'No content available for this chunk.')} 
                     style={styles.markdownContent}
                   />
                 </ScrollView>
@@ -383,7 +518,22 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   progressContainer: {
-    marginBottom: 8,
+    marginBottom: 16,
+  },
+  progressDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  progressText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  progressSubtext: {
+    fontSize: 12,
+    color: '#8E8E93',
   },
   chunkContent: {
     alignItems: 'flex-start',

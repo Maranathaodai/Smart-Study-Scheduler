@@ -24,6 +24,7 @@ export class SupabaseAuthService {
   // Sign up new user
   async signUp({ email, password, full_name }: SignUpData) {
     try {
+      // Use signUp with email confirmation to prevent auto-login
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -31,6 +32,8 @@ export class SupabaseAuthService {
           data: {
             full_name: full_name || '',
           },
+          // Enable email confirmation to prevent auto-login
+          emailRedirectTo: 'https://yourapp.com',
         },
       });
 
@@ -38,9 +41,14 @@ export class SupabaseAuthService {
         throw new Error(error.message);
       }
 
+      // If user was somehow signed in automatically, sign them out
+      if (data.session) {
+        await supabase.auth.signOut();
+      }
+
       return {
         user: data.user,
-        session: data.session,
+        session: null, // No session since we want manual login
       };
     } catch (error) {
       console.error('Sign up error:', error);
@@ -135,9 +143,12 @@ export class SupabaseAuthService {
       throw error;
     }
   }
+
 }
 
 export const authService = new SupabaseAuthService();
+
+
 
 
 

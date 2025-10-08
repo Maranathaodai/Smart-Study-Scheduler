@@ -13,35 +13,12 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f5;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        
-        .phone-frame {
-            width: 300px;
-            height: 600px;
-            background: #000;
-            border-radius: 30px;
-            padding: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        
-        .screen {
-            width: 100%;
-            height: 100%;
-            background: #fff;
-            border-radius: 25px;
-            overflow: hidden;
+            background: #FFFFFF;
+            width: 440px;
+            height: 956px;
+            margin: 0 auto;
             position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 20px;
+            overflow: hidden;
         }
         
         .status-bar {
@@ -49,97 +26,310 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 30px;
-            background: #f0f0f0;
+            height: 44px;
+            background: transparent;
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0 20px;
-            font-size: 12px;
-            font-weight: 600;
+            z-index: 10;
         }
         
-        .welcome-icon {
+        .time {
+            font-size: 17px;
+            font-weight: 600;
+            color: #000000;
+        }
+        
+        .status-icons {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .signal-icon {
+            width: 18px;
+            height: 12px;
+            background: #000000;
+            border-radius: 2px;
+            position: relative;
+        }
+        
+        .signal-icon::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 2px;
+            width: 14px;
+            height: 8px;
+            background: #000000;
+            border-radius: 1px;
+        }
+        
+        .signal-icon::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: 4px;
+            width: 10px;
+            height: 6px;
+            background: #000000;
+            border-radius: 1px;
+        }
+        
+        .wifi-icon {
+            width: 16px;
+            height: 12px;
+            background: #000000;
+            border-radius: 2px;
+        }
+        
+        .battery-icon {
+            width: 24px;
+            height: 12px;
+            border: 1px solid #000000;
+            border-radius: 2px;
+            position: relative;
+        }
+        
+        .battery-icon::after {
+            content: '';
+            position: absolute;
+            right: -3px;
+            top: 3px;
+            width: 2px;
+            height: 6px;
+            background: #000000;
+            border-radius: 0 1px 1px 0;
+        }
+        
+        .battery-fill {
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            width: 20px;
+            height: 8px;
+            background: #000000;
+            border-radius: 1px;
+        }
+        
+        .skip-button {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background: transparent;
+            border: none;
+            color: #007AFF;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            z-index: 5;
+        }
+        
+        .container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0 40px;
+        }
+        
+        .logo-container {
+            margin-bottom: 60px;
+        }
+        
+        .logo {
             width: 120px;
             height: 120px;
-            background: linear-gradient(135deg, #34C759, #30D158);
-            border-radius: 60px;
-            margin-bottom: 40px;
+            background: linear-gradient(135deg, #007AFF 0%, #FF9500 100%);
+            border-radius: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 48px;
+            position: relative;
+            box-shadow: 0 8px 32px rgba(0, 122, 255, 0.3);
         }
         
-        .welcome-title {
-            font-size: 32px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 20px;
-            text-align: center;
+        .logo-inner {
+            width: 80px;
+            height: 80px;
+            background: #FFFFFF;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
         }
         
-        .welcome-description {
-            font-size: 18px;
-            color: #666;
-            text-align: center;
-            margin-bottom: 50px;
-            line-height: 1.4;
+        .books-stack {
+            position: relative;
+            width: 40px;
+            height: 30px;
         }
         
-        .get-started-btn {
-            background: #007AFF;
-            color: white;
-            padding: 16px 40px;
-            border-radius: 25px;
-            font-size: 18px;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
-        }
-        
-        .page-indicators {
+        .book {
             position: absolute;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
+            width: 30px;
+            height: 20px;
+            background: #007AFF;
+            border-radius: 2px;
+            border: 1px solid #FFFFFF;
+        }
+        
+        .book:nth-child(1) {
+            bottom: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        .book:nth-child(2) {
+            bottom: 2px;
+            left: 2px;
+            z-index: 2;
+        }
+        
+        .book:nth-child(3) {
+            bottom: 4px;
+            left: 4px;
+            z-index: 3;
+        }
+        
+        .book:nth-child(4) {
+            bottom: 6px;
+            left: 6px;
+            z-index: 4;
+        }
+        
+        .bookmark {
+            position: absolute;
+            top: -2px;
+            right: 2px;
+            width: 4px;
+            height: 8px;
+            background: #FF9500;
+            border-radius: 2px;
+        }
+        
+        .clock-icon {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 16px;
+            height: 16px;
+            background: #FFFFFF;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: #000000;
+        }
+        
+        .content {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+        
+        .title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 16px;
+            letter-spacing: -0.7px;
+        }
+        
+        .description {
+            font-size: 16px;
+            font-weight: 400;
+            color: #8E8E93;
+            line-height: 1.4;
+            max-width: 280px;
+        }
+        
+        .indicators {
             display: flex;
             gap: 8px;
+            margin-bottom: 40px;
         }
         
         .indicator {
             width: 8px;
             height: 8px;
             border-radius: 4px;
-            background: #ddd;
+            background: #C7C7CC;
+            transition: background-color 0.3s ease;
         }
         
         .indicator.active {
             background: #007AFF;
         }
+        
+        .next-button {
+            width: 100%;
+            max-width: 200px;
+            height: 50px;
+            background: #007AFF;
+            border: none;
+            border-radius: 12px;
+            color: #FFFFFF;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .next-button:hover {
+            background: #0056CC;
+        }
     </style>
 </head>
 <body>
-    <div class="phone-frame">
-        <div class="screen">
-            <div class="status-bar">
-                <span>9:41</span>
-                <span>100%</span>
-            </div>
-            
-            <div class="welcome-icon">👋</div>
-            <h1 class="welcome-title">Welcome to Smart Study</h1>
-            <p class="welcome-description">Let's set up your personalized study schedule with AI-powered planning</p>
-            <button class="get-started-btn">Get Started</button>
-            
-            <div class="page-indicators">
-                <div class="indicator active"></div>
-                <div class="indicator"></div>
-                <div class="indicator"></div>
+    <div class="status-bar">
+        <div class="time">1:51</div>
+        <div class="status-icons">
+            <div class="signal-icon"></div>
+            <div class="wifi-icon"></div>
+            <div class="battery-icon">
+                <div class="battery-fill"></div>
             </div>
         </div>
+    </div>
+    
+    <button class="skip-button">Skip</button>
+    
+    <div class="container">
+        <div class="logo-container">
+            <div class="logo">
+                <div class="logo-inner">
+                    <div class="books-stack">
+                        <div class="book"></div>
+                        <div class="book"></div>
+                        <div class="book"></div>
+                        <div class="book">
+                            <div class="bookmark"></div>
+                        </div>
+                    </div>
+                    <div class="clock-icon">🕐</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <h1 class="title">Organize Your Learning</h1>
+            <p class="description">
+                Upload your course materials and get a<br>
+                clean, tailored schedule that fits your life.
+            </p>
+        </div>
+        
+        <div class="indicators">
+            <div class="indicator active"></div>
+            <div class="indicator"></div>
+            <div class="indicator"></div>
+        </div>
+        
+        <button class="next-button">Next</button>
     </div>
 </body>
 </html>

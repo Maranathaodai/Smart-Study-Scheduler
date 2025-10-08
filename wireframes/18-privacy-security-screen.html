@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy & Security Screen - Smart Study Scheduler</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .phone-frame {
+            width: 300px;
+            height: 600px;
+            background: #000;
+            border-radius: 30px;
+            padding: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 25px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .status-bar {
+            height: 30px;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border-bottom: 2px dashed #ccc;
+        }
+        
+        .header {
+            height: 50px;
+            background: #f0f0f0;
+            border-bottom: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: #333;
+            position: relative;
+        }
+        
+        .back-button {
+            position: absolute;
+            left: 20px;
+            width: 30px;
+            height: 30px;
+            background: #f0f0f0;
+            border: 2px dashed #333;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .security-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .security-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #007AFF, #34C759);
+            border-radius: 30px;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 25px;
+        }
+        
+        .security-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .security-subtitle {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .privacy-section {
+            background: #f8f8f8;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 12px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .section-icon {
+            width: 25px;
+            height: 25px;
+            background: #007AFF;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+        
+        .privacy-item {
+            background: white;
+            border: 2px dashed #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .privacy-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .privacy-info {
+            flex: 1;
+        }
+        
+        .privacy-name {
+            font-size: 13px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 3px;
+        }
+        
+        .privacy-desc {
+            font-size: 11px;
+            color: #666;
+            line-height: 1.3;
+        }
+        
+        .toggle-switch {
+            width: 40px;
+            height: 20px;
+            background: #007AFF;
+            border-radius: 10px;
+            position: relative;
+        }
+        
+        .toggle-switch.inactive {
+            background: #ddd;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 8px;
+            transform: translateX(18px);
+        }
+        
+        .toggle-switch.inactive .toggle-slider {
+            transform: translateX(0);
+        }
+        
+        .data-section {
+            background: #f8f8f8;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .data-item {
+            background: white;
+            border: 2px dashed #ddd;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .data-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .data-action {
+            background: #007AFF;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .data-action.danger {
+            background: #FF3B30;
+        }
+        
+        .security-features {
+            background: #f8f8f8;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .feature-item {
+            background: white;
+            border: 2px dashed #34C759;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .feature-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .feature-icon {
+            width: 30px;
+            height: 30px;
+            background: #34C759;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            margin-right: 12px;
+        }
+        
+        .feature-text {
+            flex: 1;
+        }
+        
+        .feature-name {
+            font-size: 13px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 2px;
+        }
+        
+        .feature-desc {
+            font-size: 11px;
+            color: #666;
+            line-height: 1.3;
+        }
+        
+        .legal-links {
+            background: #f8f8f8;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .legal-link {
+            background: white;
+            border: 2px dashed #ddd;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #333;
+            text-decoration: none;
+        }
+        
+        .legal-link:last-child {
+            margin-bottom: 0;
+        }
+        
+        .legal-text {
+            font-size: 13px;
+            font-weight: bold;
+        }
+        
+        .arrow-icon {
+            color: #999;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="screen">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>100%</span>
+            </div>
+            
+            <div class="header">
+                <div class="back-button">←</div>
+                <span>Privacy & Security</span>
+            </div>
+            
+            <div class="content">
+                <div class="security-header">
+                    <div class="security-icon">🔒</div>
+                    <h2 class="security-title">Your Privacy Matters</h2>
+                    <p class="security-subtitle">Control how your data is used</p>
+                </div>
+                
+                <div class="privacy-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">👤</span>
+                        Privacy Settings
+                    </h3>
+                    
+                    <div class="privacy-item">
+                        <div class="privacy-info">
+                            <div class="privacy-name">Analytics & Insights</div>
+                            <div class="privacy-desc">Help improve app with usage data</div>
+                        </div>
+                        <div class="toggle-switch">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="privacy-item">
+                        <div class="privacy-info">
+                            <div class="privacy-name">Personalized Recommendations</div>
+                            <div class="privacy-desc">Use study patterns for suggestions</div>
+                        </div>
+                        <div class="toggle-switch">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="privacy-item">
+                        <div class="privacy-info">
+                            <div class="privacy-name">Performance Monitoring</div>
+                            <div class="privacy-desc">Monitor app performance for fixes</div>
+                        </div>
+                        <div class="toggle-switch inactive">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="privacy-item">
+                        <div class="privacy-info">
+                            <div class="privacy-name">Marketing Communications</div>
+                            <div class="privacy-desc">Receive tips and updates via email</div>
+                        </div>
+                        <div class="toggle-switch inactive">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="data-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">💾</span>
+                        Data Management
+                    </h3>
+                    
+                    <div class="data-item">
+                        <div class="privacy-info">
+                            <div class="privacy-name">Export Study Data</div>
+                            <div class="privacy-desc">Download your courses and progress</div>
+                        </div>
+                        <button class="data-action">Export</button>
+                    </div>
+                    
+                    <div class="data-item">
+                        <div class="privacy-info">
+                            <div class="privacy-name">Clear Cache Data</div>
+                            <div class="privacy-desc">Remove temporary files</div>
+                        </div>
+                        <button class="data-action">Clear</button>
+                    </div>
+                    
+                    <div class="data-item">
+                        <div class="privacy-info">
+                            <div class="privacy-name">Delete Account</div>
+                            <div class="privacy-desc">Permanently remove all data</div>
+                        </div>
+                        <button class="data-action danger">Delete</button>
+                    </div>
+                </div>
+                
+                <div class="security-features">
+                    <h3 class="section-title">
+                        <span class="section-icon">🛡️</span>
+                        Security Features
+                    </h3>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">🔐</div>
+                        <div class="feature-text">
+                            <div class="feature-name">End-to-End Encryption</div>
+                            <div class="feature-desc">Data encrypted at rest and in transit</div>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">☁️</div>
+                        <div class="feature-text">
+                            <div class="feature-name">Secure Cloud Backup</div>
+                            <div class="feature-desc">Automatic encrypted backups</div>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">🔍</div>
+                        <div class="feature-text">
+                            <div class="feature-name">Regular Security Audits</div>
+                            <div class="feature-desc">Continuous monitoring for threats</div>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">🚫</div>
+                        <div class="feature-text">
+                            <div class="feature-name">No Third-Party Sharing</div>
+                            <div class="feature-desc">We never sell your personal data</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="legal-links">
+                    <h3 class="section-title">
+                        <span class="section-icon">📄</span>
+                        Legal Documents
+                    </h3>
+                    
+                    <a href="#" class="legal-link">
+                        <span class="legal-text">Privacy Policy</span>
+                        <span class="arrow-icon">→</span>
+                    </a>
+                    
+                    <a href="#" class="legal-link">
+                        <span class="legal-text">Terms of Service</span>
+                        <span class="arrow-icon">→</span>
+                    </a>
+                    
+                    <a href="#" class="legal-link">
+                        <span class="legal-text">Data Processing Agreement</span>
+                        <span class="arrow-icon">→</span>
+                    </a>
+                    
+                    <a href="#" class="legal-link">
+                        <span class="legal-text">Cookie Policy</span>
+                        <span class="arrow-icon">→</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .phone-frame {
+            width: 320px;
+            height: 640px;
+            background: linear-gradient(145deg, #2c3e50, #34495e);
+            border-radius: 35px;
+            padding: 8px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1);
+            position: relative;
+        }
+        
+        .phone-frame::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 6px;
+            background: #34495e;
+            border-radius: 3px;
+        }
+        
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 30px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+        }
+        
+        .status-bar {
+            height: 35px;
+            background: linear-gradient(180deg, #667eea 0%, #5a6fd8 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .header {
+            height: 60px;
+            background: linear-gradient(180deg, #667eea 0%, #5a6fd8 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 20px;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        }
+        
+        .back-button {
+            position: absolute;
+            left: 20px;
+            width: 36px;
+            height: 36px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+        }
+        
+        .security-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .security-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 40px;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 35px;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .security-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .security-subtitle {
+            font-size: 15px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .privacy-section {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            border: 1px solid #e9ecef;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-icon {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .privacy-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px;
+            margin-bottom: 12px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .privacy-item:hover {
+            background: #e9ecef;
+        }
+        
+        .privacy-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .privacy-info {
+            flex: 1;
+        }
+        
+        .privacy-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        
+        .privacy-desc {
+            font-size: 13px;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 25px;
+            background: #dee2e6;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-switch.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 21px;
+            height: 21px;
+            background: white;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(25px);
+        }
+        
+        .data-section {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            border: 1px solid #e9ecef;
+        }
+        
+        .data-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px;
+            margin-bottom: 12px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .data-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .data-action {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .data-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .data-action.danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
+        .security-features {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            border: 1px solid #e9ecef;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 12px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .feature-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            margin-right: 15px;
+        }
+        
+        .feature-text {
+            flex: 1;
+        }
+        
+        .feature-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        
+        .feature-desc {
+            font-size: 13px;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+        
+        .legal-links {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            border: 1px solid #e9ecef;
+        }
+        
+        .legal-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px;
+            margin-bottom: 12px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+            color: #2c3e50;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .legal-link:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+        }
+        
+        .legal-link:last-child {
+            margin-bottom: 0;
+        }
+        
+        .legal-text {
+            font-size: 15px;
+            font-weight: 500;
+        }
+        
+        .arrow-icon {
+            color: #adb5bd;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="screen">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>●●●●● 100%</span>
+            </div>
+            
+            <div class="header">
+                <div class="back-button">←</div>
+                <span>Privacy & Security</span>
+            </div>
+            
+            <div class="content">
+                <div class="security-header">
+                    <div class="security-icon">🔒</div>
+                    <h2 class="security-title">Your Privacy Matters</h2>
+                    <p class="security-subtitle">Control how your data is used and protected</p>
+                </div>
+                
+                <div class="privacy-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">👤</span>
+                        Privacy Settings
+                    </h3>
+                    
+                    <div class="privacy-item">
+                        <div class="privacy-info">
+                            <div class="privacy-name">Analytics & Insights</div>
+                            <div class="privacy-desc">Help improve the app with anonymous usage data</div>
+                        </div>
+                        <div class="toggle-switch active">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="privacy-item">
+                        <div class="privacy-info">
+                            <div class="privacy-name">Personalized Recommendations</div>
+                            <div class="privacy-desc">Use study patterns to suggest improvements</div>
+                        </div>
+                        <div class="toggle-switch active">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="privacy-item">
+                        <div class="privacy-info">
+                            <div class="privacy-name">Performance Monitoring</div>
+                            <div class="privacy-desc">Monitor app performance for bug fixes</div>
+                        </div>
+                        <div class="toggle-switch">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="privacy-item">
+                        <div class="privacy-info">
+                            <div class="privacy-name">Marketing Communications</div>
+                            <div class="privacy-desc">Receive tips and feature updates via email</div>
+                        </div>
+                        <div class="toggle-switch">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="data-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">💾</span>
+                        Data Management
+                    </h3>
+                    
+                    <div class="data-item">
+                        <div class="privacy-info">
+                            <div class="privacy-name">Export Study Data</div>
+                            <div class="privacy-desc">Download your courses and progress</div>
+                        </div>
+                        <button class="data-action">Export</button>
+                    </div>
+                    
+                    <div class="data-item">
+                        <div class="privacy-info">
+                            <div class="privacy-name">Clear Cache Data</div>
+                            <div class="privacy-desc">Remove temporary files and images</div>
+                        </div>
+                        <button class="data-action">Clear</button>
+                    </div>
+                    
+                    <div class="data-item">
+                        <div class="privacy-info">
+                            <div class="privacy-name">Delete Account</div>
+                            <div class="privacy-desc">Permanently remove all your data</div>
+                        </div>
+                        <button class="data-action danger">Delete</button>
+                    </div>
+                </div>
+                
+                <div class="security-features">
+                    <h3 class="section-title">
+                        <span class="section-icon">🛡️</span>
+                        Security Features
+                    </h3>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">🔐</div>
+                        <div class="feature-text">
+                            <div class="feature-name">End-to-End Encryption</div>
+                            <div class="feature-desc">Your study data is encrypted at rest and in transit</div>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">☁️</div>
+                        <div class="feature-text">
+                            <div class="feature-name">Secure Cloud Backup</div>
+                            <div class="feature-desc">Automatic encrypted backups of your study progress</div>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">🔍</div>
+                        <div class="feature-text">
+                            <div class="feature-name">Regular Security Audits</div>
+                            <div class="feature-desc">Continuous monitoring for vulnerabilities and threats</div>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">🚫</div>
+                        <div class="feature-text">
+                            <div class="feature-name">No Third-Party Sharing</div>
+                            <div class="feature-desc">We never sell or share your personal study data</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="legal-links">
+                    <h3 class="section-title">
+                        <span class="section-icon">📄</span>
+                        Legal Documents
+                    </h3>
+                    
+                    <a href="#" class="legal-link">
+                        <span class="legal-text">Privacy Policy</span>
+                        <span class="arrow-icon">→</span>
+                    </a>
+                    
+                    <a href="#" class="legal-link">
+                        <span class="legal-text">Terms of Service</span>
+                        <span class="arrow-icon">→</span>
+                    </a>
+                    
+                    <a href="#" class="legal-link">
+                        <span class="legal-text">Data Processing Agreement</span>
+                        <span class="arrow-icon">→</span>
+                    </a>
+                    
+                    <a href="#" class="legal-link">
+                        <span class="legal-text">Cookie Policy</span>
+                        <span class="arrow-icon">→</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

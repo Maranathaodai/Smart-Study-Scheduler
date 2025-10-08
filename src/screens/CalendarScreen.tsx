@@ -5,39 +5,92 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useProgress } from '../contexts/ProgressContext';
+import { courseService as supabaseCourseService } from '../lib/supabaseCourseService';
 import { courseStorage } from '../lib/courseStorage';
+import { useAuth } from '../contexts/SupabaseAuthContext';
 import { Course, StudySession } from '../lib/types';
 
 export default function CalendarScreen() {
   const { colors } = useTheme();
   const { studyStatistics, overallProgress } = useProgress();
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [courses, setCourses] = useState<Course[]>([]);
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load courses and sessions on component mount
+  // Load courses and sessions on component mount and when user changes
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) {
+      loadData();
+    }
+  }, [user]);
+
+  // Also reload data when screen comes into focus (e.g., after deleting a course)
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user) {
+        loadData();
+      }
+    }, [user])
+  );
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [loadedCourses, loadedSessions] = await Promise.all([
-        courseStorage.loadCourses(),
-        courseStorage.loadStudySessions()
+      
+      if (!user) {
+        console.log('No user logged in, skipping data load');
+        return;
+      }
+
+      // Load courses from both Supabase database AND local storage
+      const [databaseCourses, localCourses] = await Promise.all([
+        supabaseCourseService.getCourses(user.id).catch(() => []), // Fallback to empty array if database fails
+        courseStorage.loadCourses().catch(() => []) // Load from local storage
       ]);
-      setCourses(loadedCourses);
-      setSessions(loadedSessions);
+
+      // Combine and deduplicate courses (prefer local over database for same ID)
+      const combinedCourses = [...localCourses];
+      databaseCourses.forEach(dbCourse => {
+        if (!combinedCourses.find(localCourse => localCourse.id === dbCourse.id)) {
+          combinedCourses.push(dbCourse);
+        }
+      });
+
+      // Load study sessions from both sources
+      const [databaseSessions, localSessions] = await Promise.all([
+        // Get database sessions for all courses
+        Promise.all(
+          combinedCourses.map(course => 
+            supabaseCourseService.getStudySessions(course.id).catch(() => [])
+          )
+        ).then(sessionArrays => sessionArrays.flat()),
+        // Get local sessions
+        courseStorage.loadStudySessions().catch(() => [])
+      ]);
+
+      // Combine and deduplicate sessions (prefer local over database for same ID)
+      const combinedSessions = [...localSessions];
+      databaseSessions.forEach(dbSession => {
+        if (!combinedSessions.find(localSession => localSession.id === dbSession.id)) {
+          combinedSessions.push(dbSession);
+        }
+      });
+      
+      setCourses(combinedCourses);
+      setSessions(combinedSessions);
+      
+      console.log(`📅 Calendar loaded: ${combinedCourses.length} courses, ${combinedSessions.length} sessions`);
     } catch (error) {
       console.error('Error loading calendar data:', error);
+      // Don't show alert - just log error and continue with empty data
     } finally {
       setLoading(false);
     }
@@ -82,7 +135,7 @@ export default function CalendarScreen() {
 
   const getUniqueColorsForDate = (date: Date) => {
     const courses = getCoursesForDate(date);
-    return [...new Set(courses.map(course => course?.color))];
+    return [...new Set(courses.map(course => course?.color).filter(color => color))];
   };
 
   const getMultiColorBackground = (colors: string[]) => {
@@ -110,16 +163,48 @@ export default function CalendarScreen() {
     return days[dayIndex];
   };
 
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setSelectedDate(prevDate => {
+      const newDate = new Date(prevDate);
+      if (direction === 'prev') {
+        newDate.setMonth(newDate.getMonth() - 1);
+      } else {
+        newDate.setMonth(newDate.getMonth() + 1);
+      }
+      return newDate;
+    });
+  };
+
+  const goToToday = () => {
+    setSelectedDate(new Date());
+  };
+
   const days = getDaysInMonth(selectedDate);
   const todaySessions = getSessionsForDate(selectedDate);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Study Calendar</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          {formatDate(selectedDate)}
-        </Text>
+        <View style={styles.headerRow}>
+          <Text style={[styles.title, { color: colors.text }]}>Study Calendar</Text>
+          <TouchableOpacity onPress={goToToday} style={styles.todayButton}>
+            <Text style={[styles.todayButtonText, { color: colors.primary }]}>Today</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.monthNavigation}>
+          <TouchableOpacity onPress={() => navigateMonth('prev')} style={styles.navButton}>
+            <Ionicons name="chevron-back" size={24} color={colors.primary} />
+          </TouchableOpacity>
+          
+          <Text style={[styles.monthTitle, { color: colors.text }]}>
+            {formatDate(selectedDate)}
+          </Text>
+          
+          <TouchableOpacity onPress={() => navigateMonth('next')} style={styles.navButton}>
+            <Ionicons name="chevron-forward" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -231,6 +316,66 @@ export default function CalendarScreen() {
           </CardContent>
         </Card>
 
+        {/* Upcoming Sessions Summary */}
+        {sessions.length > 0 && (
+          <Card style={styles.upcomingCard}>
+            <CardHeader>
+              <CardTitle>Upcoming Sessions (Next 7 Days)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const today = new Date();
+                const next7Days = Array.from({ length: 7 }, (_, i) => {
+                  const date = new Date(today);
+                  date.setDate(today.getDate() + i);
+                  return date;
+                });
+
+                const upcomingSessions = next7Days.flatMap(date => {
+                  const dateSessions = getSessionsForDate(date);
+                  return dateSessions.map(session => ({
+                    ...session,
+                    date: date,
+                    course: courses.find(c => c.id === session.courseId)
+                  }));
+                }).filter(session => !session.completed);
+
+                if (upcomingSessions.length === 0) {
+                  return (
+                    <View style={styles.noSessions}>
+                      <Ionicons name="checkmark-circle" size={48} color={colors.textSecondary} />
+                      <Text style={[styles.noSessionsText, { color: colors.textSecondary }]}>
+                        No upcoming sessions in the next 7 days
+                      </Text>
+                    </View>
+                  );
+                }
+
+                return upcomingSessions.slice(0, 5).map((session, index) => (
+                  <View key={`${session.id}-${session.date.toDateString()}`} style={styles.upcomingSessionItem}>
+                    <View style={[styles.sessionColorBar, { backgroundColor: session.course?.color || '#8E8E93' }]} />
+                    <View style={styles.sessionInfo}>
+                      <Text style={[styles.sessionTitle, { color: colors.text }]}>
+                        {session.course?.name || 'Unknown Course'}
+                      </Text>
+                      <Text style={[styles.sessionDetails, { color: colors.textSecondary }]}>
+                        {session.date.toLocaleDateString()} • {session.slides} slides
+                      </Text>
+                    </View>
+                    <View style={styles.sessionStatus}>
+                      <Text style={[styles.dayLabel, { color: colors.textSecondary }]}>
+                        {session.date.toDateString() === today.toDateString() ? 'Today' : 
+                         session.date.toDateString() === new Date(today.getTime() + 24*60*60*1000).toDateString() ? 'Tomorrow' :
+                         session.date.toLocaleDateString('en-US', { weekday: 'short' })}
+                      </Text>
+                    </View>
+                  </View>
+                ));
+              })()}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Course Legend - Show if user has courses */}
         {courses.length > 0 && (
           <Card style={styles.legendCard}>
@@ -296,11 +441,42 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 24,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  todayButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#E3F2FD',
+  },
+  todayButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  monthNavigation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  navButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#F2F2F7',
+  },
+  monthTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    textAlign: 'center',
+    flex: 1,
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#000000',
-    marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
@@ -427,6 +603,22 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     textAlign: 'center',
     marginTop: 12,
+  },
+  upcomingCard: {
+    marginBottom: 16,
+  },
+  upcomingSessionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  dayLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    minWidth: 60,
+    textAlign: 'right',
   },
   legendCard: {
     marginBottom: 16,

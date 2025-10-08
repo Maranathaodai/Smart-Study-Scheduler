@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Schedule Screen - Smart Study Scheduler</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .phone-frame {
+            width: 300px;
+            height: 600px;
+            background: #000;
+            border-radius: 30px;
+            padding: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 25px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Schedule Screen - Smart Study Scheduler</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .phone-frame {
+            width: 300px;
+            height: 600px;
+            background: #000;
+            border-radius: 30px;
+            padding: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 25px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .status-bar {
+            height: 30px;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border-bottom: 2px dashed #ccc;
+        }
+        
+        .header {
+            height: 50px;
+            background: #f0f0f0;
+            border-bottom: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: #333;
+            position: relative;
+        }
+        
+        .back-button {
+            position: absolute;
+            left: 20px;
+            width: 30px;
+            height: 30px;
+            background: #f0f0f0;
+            border: 2px dashed #333;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .course-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 2px dashed #333;
+            text-align: center;
+        }
+        
+        .progress-card {
+            background: #f8f8f8;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .progress-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .progress-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border: 2px dashed #007AFF;
+            border-radius: 8px;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007AFF;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .session-item {
+            background: #f8f8f8;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .session-number {
+            background: #007AFF;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .session-date {
+            font-size: 12px;
+            color: #666;
+            font-weight: bold;
+            background: #f0f0f0;
+            padding: 5px 10px;
+            border: 2px dashed #666;
+            border-radius: 4px;
+        }
+        
+        .session-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .session-details {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .session-button {
+            background: #007AFF;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .tips-card {
+            background: #f8f8f8;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .tips-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .tip-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px dashed #ddd;
+        }
+        
+        .tip-item:last-child {
+            border-bottom: none;
+        }
+        
+        .tip-icon {
+            width: 20px;
+            height: 20px;
+            background: #34C759;
+            border: 2px dashed #333;
+            border-radius: 10px;
+            margin-right: 10px;
+        }
+        
+        .tip-content {
+            flex: 1;
+        }
+        
+        .tip-title {
+            font-size: 12px;
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        
+        .tip-text {
+            font-size: 11px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="screen">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>●●●●● 100%</span>
+            </div>
+            
+            <div class="header">
+                <div class="back-button">←</div>
+                <span>Study Schedule</span>
+            </div>
+            
+            <div class="content">
+                <h2 class="course-title">Mathematics - Calculus</h2>
+                
+                <div class="progress-card">
+                    <h3 class="progress-title">Course Progress</h3>
+                    <div class="progress-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">3</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">7</div>
+                            <div class="stat-label">Remaining</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">30%</div>
+                            <div class="stat-label">Complete</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="session-item">
+                    <div class="session-header">
+                        <div class="session-number">1</div>
+                        <span class="session-date">Today</span>
+                    </div>
+                    <h3 class="session-title">Introduction to Derivatives</h3>
+                    <div class="session-details">25 slides • 45 minutes • Not started</div>
+                    <button class="session-button">Start Session</button>
+                </div>
+                
+                <div class="session-item">
+                    <div class="session-header">
+                        <div class="session-number">2</div>
+                        <span class="session-date">Tomorrow</span>
+                    </div>
+                    <h3 class="session-title">Basic Differentiation Rules</h3>
+                    <div class="session-details">30 slides • 50 minutes • Scheduled</div>
+                    <button class="session-button">View Details</button>
+                </div>
+                
+                <div class="session-item">
+                    <div class="session-header">
+                        <div class="session-number">3</div>
+                        <span class="session-date">Day 3</span>
+                    </div>
+                    <h3 class="session-title">Chain Rule and Product Rule</h3>
+                    <div class="session-details">35 slides • 55 minutes • Scheduled</div>
+                    <button class="session-button">View Details</button>
+                </div>
+                
+                <div class="tips-card">
+                    <h3 class="tips-title">Study Tips</h3>
+                    <div class="tip-item">
+                        <div class="tip-icon"></div>
+                        <div class="tip-content">
+                            <div class="tip-title">Pomodoro Technique</div>
+                            <div class="tip-text">Study in 25-minute focused sessions</div>
+                        </div>
+                    </div>
+                    <div class="tip-item">
+                        <div class="tip-icon"></div>
+                        <div class="tip-content">
+                            <div class="tip-title">Review & Connect</div>
+                            <div class="tip-text">Review previous material first</div>
+                        </div>
+                    </div>
+                    <div class="tip-item">
+                        <div class="tip-icon"></div>
+                        <div class="tip-content">
+                            <div class="tip-title">Take Notes</div>
+                            <div class="tip-text">Write down key concepts</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

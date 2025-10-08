@@ -16,12 +16,22 @@ import { ProgressBar } from '../components/ui/ProgressBar';
 import { Ionicons } from '@expo/vector-icons';
 import { format, isToday, isPast, isFuture, addDays } from 'date-fns';
 import { useTheme } from '../contexts/ThemeContext';
+import { useProgress } from '../contexts/ProgressContext';
+import { courseStorage } from '../lib/courseStorage';
 
 export default function StudyScheduleScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { colors } = useTheme();
-  const { course, studySessions } = (route.params as any) || {};
+  const { updateSessionCompletion } = useProgress();
+  const { course: rawCourse, studySessions } = (route.params as any) || {};
+  
+  // Deserialize the course object (handle createdAt)
+  const course = rawCourse ? {
+    ...rawCourse,
+    createdAt: typeof rawCourse.createdAt === 'string' ? new Date(rawCourse.createdAt) : rawCourse.createdAt,
+  } : null;
+  
   const initialSessions = (studySessions || []).map((s: any) => ({
     ...s,
     date: typeof s.date === 'string' ? new Date(s.date) : s.date,
@@ -36,8 +46,26 @@ export default function StudyScheduleScreen() {
   const completedSessions = sessions.filter(session => session.completed).length;
 
   const handleStartSession = (session) => {
-    if (isFuture(session.date) && !isToday(session.date)) {
-      Alert.alert('Not Yet', 'This session is scheduled for a future date.');
+    // Find the current session's index
+    const currentSessionIndex = sessions.findIndex(s => s.id === session.id);
+    
+    // Check if there are any incomplete sessions before this one
+    const previousIncompleteSessions = sessions
+      .slice(0, currentSessionIndex)
+      .filter(s => !s.completed);
+    
+    // Allow access if:
+    // 1. It's today or in the past, OR
+    // 2. All previous sessions are completed (progressive unlocking)
+    const canAccess = !isFuture(session.date) || 
+                      isToday(session.date) || 
+                      previousIncompleteSessions.length === 0;
+    
+    if (!canAccess) {
+      Alert.alert(
+        'Complete Previous Sessions', 
+        'Please complete the previous study sessions before accessing this one.'
+      );
       return;
     }
     
@@ -80,23 +108,41 @@ export default function StudyScheduleScreen() {
     }, 3000);
   };
 
-  const handleMarkComplete = (sessionId) => {
-    setSessions(prevSessions => {
-      const updatedSessions = prevSessions.map(session =>
-        session.id === sessionId
-          ? { ...session, completed: true, completedSlides: session.slides }
-          : session
-      );
-      
-      // Check if all sessions are now completed
-      const allCompleted = updatedSessions.every(session => session.completed);
-      if (allCompleted && prevSessions.some(session => !session.completed)) {
-        // Trigger celebration if this was the last session to complete
-        setTimeout(() => triggerCelebration(), 500);
+  const handleMarkComplete = async (sessionId) => {
+    try {
+      // Update local state first
+      setSessions(prevSessions => {
+        const updatedSessions = prevSessions.map(session =>
+          session.id === sessionId
+            ? { ...session, completed: true, completedSlides: session.slides }
+            : session
+        );
+        
+        // Check if all sessions are now completed
+        const allCompleted = updatedSessions.every(session => session.completed);
+        if (allCompleted && prevSessions.some(session => !session.completed)) {
+          // Trigger celebration if this was the last session to complete
+          setTimeout(() => triggerCelebration(), 500);
+        }
+        
+        return updatedSessions;
+      });
+
+      // Find the session to get complete slide count
+      const sessionToComplete = sessions.find(s => s.id === sessionId);
+      if (sessionToComplete) {
+        // Update progress context
+        updateSessionCompletion(sessionId, true, sessionToComplete.slides);
+        
+        // Persist to storage
+        await courseStorage.updateSessionProgress(sessionId, 100);
+        
+        console.log('✅ Session marked as complete and persisted');
       }
-      
-      return updatedSessions;
-    });
+    } catch (error) {
+      console.error('❌ Error marking session complete:', error);
+      Alert.alert('Error', 'Failed to save completion status. Please try again.');
+    }
   };
 
   const getSessionStatus = (session) => {
@@ -258,12 +304,44 @@ export default function StudyScheduleScreen() {
                       </View>
                     ) : (
                       <View style={styles.sessionActions}>
-                        <Button
-                          title={isTodaySession ? "Start Now" : isPastSession ? "Catch Up" : "Start Session"}
-                          onPress={() => handleStartSession(session)}
-                          size="sm"
-                          style={{...styles.startButton, backgroundColor: course?.color || '#007AFF'}}
-                        />
+                        {(() => {
+                          // Find the current session's index
+                          const currentSessionIndex = sessions.findIndex(s => s.id === session.id);
+                          
+                          // Check if there are any incomplete sessions before this one
+                          const previousIncompleteSessions = sessions
+                            .slice(0, currentSessionIndex)
+                            .filter(s => !s.completed);
+                          
+                          // Determine if session is accessible
+                          const canAccess = !isFuture(session.date) || 
+                                            isToday(session.date) || 
+                                            previousIncompleteSessions.length === 0;
+                          
+                          // Determine button text
+                          let buttonTitle = "Start Session";
+                          if (isTodaySession) {
+                            buttonTitle = "Start Now";
+                          } else if (isPastSession) {
+                            buttonTitle = "Catch Up";
+                          } else if (!canAccess) {
+                            buttonTitle = "Locked";
+                          }
+                          
+                          return (
+                            <Button
+                              title={buttonTitle}
+                              onPress={() => handleStartSession(session)}
+                              size="sm"
+                              style={{
+                                ...styles.startButton, 
+                                backgroundColor: canAccess ? (course?.color || '#007AFF') : '#8E8E93',
+                                opacity: canAccess ? 1 : 0.6
+                              }}
+                              disabled={!canAccess}
+                            />
+                          );
+                        })()}
                         <Button
                           title="Mark Complete"
                           onPress={() => handleMarkComplete(session.id)}

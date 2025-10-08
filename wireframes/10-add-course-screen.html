@@ -13,194 +13,396 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f5;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        
-        .phone-frame {
-            width: 300px;
-            height: 600px;
-            background: #000;
-            border-radius: 30px;
-            padding: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        
-        .screen {
-            width: 100%;
-            height: 100%;
-            background: #fff;
-            border-radius: 25px;
-            overflow: hidden;
+            background: #F2F2F7;
+            width: 440px;
+            height: 956px;
+            margin: 0 auto;
             position: relative;
-            display: flex;
-            flex-direction: column;
+            overflow: hidden;
         }
         
         .status-bar {
-            height: 30px;
-            background: #f0f0f0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 44px;
+            background: transparent;
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0 20px;
-            font-size: 12px;
-            font-weight: 600;
+            z-index: 10;
         }
         
-        .header {
-            height: 60px;
-            background: #f8f8f8;
-            border-bottom: 2px solid #ddd;
+        .time {
+            font-size: 17px;
+            font-weight: 600;
+            color: #000000;
+        }
+        
+        .status-icons {
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 18px;
+            gap: 5px;
+        }
+        
+        .signal-icon {
+            width: 18px;
+            height: 12px;
+            background: #000000;
+            border-radius: 2px;
             position: relative;
         }
         
-        .back-button {
+        .signal-icon::before {
+            content: '';
             position: absolute;
-            left: 20px;
-            width: 30px;
-            height: 30px;
-            background: #333;
-            border-radius: 15px;
+            top: -2px;
+            left: 2px;
+            width: 14px;
+            height: 8px;
+            background: #000000;
+            border-radius: 1px;
+        }
+        
+        .signal-icon::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: 4px;
+            width: 10px;
+            height: 6px;
+            background: #000000;
+            border-radius: 1px;
+        }
+        
+        .wifi-icon {
+            width: 16px;
+            height: 12px;
+            background: #000000;
+            border-radius: 2px;
+        }
+        
+        .battery-icon {
+            width: 24px;
+            height: 12px;
+            border: 1px solid #000000;
+            border-radius: 2px;
+            position: relative;
+        }
+        
+        .battery-icon::after {
+            content: '';
+            position: absolute;
+            right: -3px;
+            top: 3px;
+            width: 2px;
+            height: 6px;
+            background: #000000;
+            border-radius: 0 1px 1px 0;
+        }
+        
+        .battery-fill {
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            width: 20px;
+            height: 8px;
+            background: #000000;
+            border-radius: 1px;
+        }
+        
+        .header {
+            position: fixed;
+            top: 44px;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #FFFFFF;
             display: flex;
             align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 16px;
+            padding: 0 20px;
+            border-bottom: 1px solid #E5E5EA;
+            z-index: 5;
+        }
+        
+        .back-button {
+            width: 40px;
+            height: 40px;
+            background: transparent;
+            border: none;
+            color: #007AFF;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .page-title {
+            flex: 1;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: #000000;
+        }
+        
+        .container {
+            padding: 120px 20px 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
         
         .content {
             flex: 1;
-            padding: 30px;
             overflow-y: auto;
+            padding-bottom: 40px;
         }
         
-        .input-group {
+        .card {
+            background: #FFFFFF;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #000000;
             margin-bottom: 20px;
         }
         
-        .input-label {
-            font-size: 14px;
-            color: #333;
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: #000000;
             margin-bottom: 8px;
             display: block;
-            font-weight: bold;
         }
         
-        .input-field {
+        .form-input {
             width: 100%;
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
+            height: 50px;
+            background: #F2F2F7;
+            border: 1px solid #E5E5EA;
+            border-radius: 12px;
+            padding: 0 16px;
             font-size: 16px;
-            background: #f8f8f8;
+            color: #000000;
+            transition: border-color 0.2s ease;
         }
         
-        .input-field:focus {
+        .form-input:focus {
             outline: none;
-            border-color: #333;
-            background: white;
+            border-color: #007AFF;
         }
         
-        .color-selection {
-            margin: 20px 0;
+        .form-input::placeholder {
+            color: #8E8E93;
         }
         
-        .color-options {
+        .preferences-section {
+            margin-bottom: 20px;
+        }
+        
+        .preferences-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 12px;
+        }
+        
+        .preferences-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #000000;
+            margin-bottom: 8px;
+        }
+        
+        .button-group {
             display: flex;
-            gap: 15px;
-            margin-top: 10px;
+            gap: 8px;
+            margin-bottom: 16px;
         }
         
-        .color-option {
-            width: 40px;
-            height: 40px;
-            border-radius: 20px;
-            border: 3px solid transparent;
+        .preference-button {
+            flex: 1;
+            height: 36px;
+            background: #F2F2F7;
+            border: 1px solid #E5E5EA;
+            border-radius: 18px;
+            color: #000000;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
+            transition: all 0.2s ease;
         }
         
-        .color-option.selected {
-            border-color: #333;
+        .preference-button.active {
+            background: #007AFF;
+            color: #FFFFFF;
+            border-color: #007AFF;
         }
         
-        .color-blue { background: #007AFF; }
-        .color-green { background: #34C759; }
-        .color-orange { background: #FF9500; }
-        .color-red { background: #FF3B30; }
-        .color-purple { background: #AF52DE; }
-        .color-pink { background: #FF2D92; }
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
         
-        .button {
-            background: #333;
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
+        .category-button {
+            height: 36px;
+            background: #F2F2F7;
+            border: 1px solid #E5E5EA;
+            border-radius: 18px;
+            color: #000000;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .category-button.active {
+            background: #007AFF;
+            color: #FFFFFF;
+            border-color: #007AFF;
+        }
+        
+        .upload-area {
+            border: 2px dashed #E5E5EA;
+            border-radius: 16px;
+            padding: 40px 20px;
             text-align: center;
-            font-weight: bold;
-            margin: 10px 0;
+            background: #F8F9FA;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #007AFF;
+            background: #F0F8FF;
+        }
+        
+        .upload-icon {
+            width: 60px;
+            height: 60px;
+            background: #007AFF;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            color: #FFFFFF;
+            font-size: 24px;
+        }
+        
+        .upload-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: #000000;
+            margin-bottom: 8px;
+        }
+        
+        .upload-subtext {
+            font-size: 14px;
+            font-weight: 400;
+            color: #8E8E93;
+        }
+        
+        .create-button {
             width: 100%;
+            height: 50px;
+            background: #007AFF;
+            border: none;
+            border-radius: 12px;
+            color: #FFFFFF;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
         }
         
-        .button.secondary {
-            background: #f0f0f0;
-            color: #333;
-        }
-        
-        .button.primary {
-            background: #34C759;
+        .create-button:hover {
+            background: #0056CC;
         }
     </style>
 </head>
 <body>
-    <div class="phone-frame">
-        <div class="screen">
-            <div class="status-bar">
-                <span>9:41</span>
-                <span>100%</span>
+    <div class="status-bar">
+        <div class="time">1:45</div>
+        <div class="status-icons">
+            <div class="signal-icon"></div>
+            <div class="wifi-icon"></div>
+            <div class="battery-icon">
+                <div class="battery-fill"></div>
             </div>
-            
-            <div class="header">
-                <div class="back-button">←</div>
-                <span>Add New Course</span>
-            </div>
-            
-            <div class="content">
-                <div class="input-group">
-                    <label class="input-label">Course Name</label>
-                    <input class="input-field" type="text" placeholder="Enter course name">
+        </div>
+    </div>
+    
+    <div class="header">
+        <button class="back-button">←</button>
+        <h1 class="page-title">Add New Course</h1>
+    </div>
+    
+    <div class="container">
+        <div class="content">
+            <div class="card">
+                <h2 class="card-title">Course Information</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">Course Name</label>
+                    <input type="text" class="form-input" placeholder="Enter course name">
                 </div>
                 
-                <div class="input-group">
-                    <label class="input-label">Category</label>
-                    <input class="input-field" type="text" placeholder="e.g., Mathematics, Science">
-                </div>
-                
-                <div class="color-selection">
-                    <label class="input-label">Course Color</label>
-                    <div class="color-options">
-                        <div class="color-option color-blue selected"></div>
-                        <div class="color-option color-green"></div>
-                        <div class="color-option color-orange"></div>
-                        <div class="color-option color-red"></div>
-                        <div class="color-option color-purple"></div>
-                        <div class="color-option color-pink"></div>
+                <div class="preferences-section">
+                    <h3 class="preferences-title">Study Preferences</h3>
+                    
+                    <div class="preferences-label">Max Study Time per Session:</div>
+                    <div class="button-group">
+                        <button class="preference-button">30m</button>
+                        <button class="preference-button">45m</button>
+                        <button class="preference-button active">60m</button>
+                        <button class="preference-button">90m</button>
+                    </div>
+                    
+                    <div class="preferences-label">Chunk Size Preference:</div>
+                    <div class="button-group">
+                        <button class="preference-button">Small</button>
+                        <button class="preference-button active">Medium</button>
+                        <button class="preference-button">Large</button>
                     </div>
                 </div>
                 
-                <div class="button secondary">Upload Files</div>
-                
-                <div class="button primary">Create Course</div>
+                <div class="preferences-section">
+                    <h3 class="preferences-title">Category</h3>
+                    <div class="category-grid">
+                        <button class="category-button">Mathematics</button>
+                        <button class="category-button active">Computer Science</button>
+                        <button class="category-button">Physics</button>
+                        <button class="category-button">Chemistry</button>
+                        <button class="category-button">Biology</button>
+                        <button class="category-button">History</button>
+                        <button class="category-button">Literature</button>
+                        <button class="category-button">Other</button>
+                    </div>
+                </div>
             </div>
+            
+            <div class="card">
+                <h2 class="card-title">Upload Materials</h2>
+                <div class="upload-area">
+                    <div class="upload-icon">☁️</div>
+                    <div class="upload-text">Tap to upload files</div>
+                    <div class="upload-subtext">PDF, Images, Text files supported</div>
+                </div>
+            </div>
+            
+            <button class="create-button">Create Course</button>
         </div>
     </div>
 </body>

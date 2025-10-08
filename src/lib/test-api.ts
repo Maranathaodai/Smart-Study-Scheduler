@@ -42,7 +42,7 @@ export async function testContentAnalysis() {
     unlabeled data. Reinforcement learning learns through interaction with an environment.
     `;
 
-    const analysis = await openRouterClient.analyzeTextContent(sampleContent, 'complexity');
+    const analysis = await openRouterClient.analyzeTextContent(sampleContent, 'concepts');
     console.log('✅ Content Analysis Successful!');
     console.log('Analysis Result:', analysis);
     

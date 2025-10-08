@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StudySession, Course } from '../lib/types';
+import { courseStorage } from '../lib/courseStorage';
 // Removed dummy data imports
 
 interface WeeklyProgress {
@@ -48,9 +49,9 @@ interface ProgressContextType {
   deleteCourse: (courseId: string) => void;
   getWeeklyData: () => WeeklyProgress[];
   getOverallData: () => OverallProgress;
-  getCourseData: () => CourseProgress[];
+  getCourseData: () => Promise<CourseProgress[]>;
   getStudyStatistics: () => StudyStatistics;
-  refreshProgress: () => void;
+  refreshProgress: () => Promise<void>;
 }
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
@@ -88,20 +89,17 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   useEffect(() => {
-    calculateProgress();
-    saveProgressData();
+    // Calculate progress when sessions change
+    calculateProgress().catch(error => {
+      console.error('Error calculating progress:', error);
+    });
   }, [sessions]);
 
   const loadProgressData = async () => {
     try {
-      const savedSessions = await AsyncStorage.getItem('progressSessions');
-      if (savedSessions !== null) {
-        const parsedSessions = JSON.parse(savedSessions).map((session: any) => ({
-          ...session,
-          date: new Date(session.date),
-        }));
-        setSessions(parsedSessions);
-      }
+      // Load sessions from user-specific storage instead of global storage
+      const userSessions = await courseStorage.loadStudySessions();
+      setSessions(userSessions);
     } catch (error) {
       console.log('Error loading progress data:', error);
     }
@@ -109,23 +107,24 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const saveProgressData = async () => {
     try {
-      await AsyncStorage.setItem('progressSessions', JSON.stringify(sessions));
+      // Save sessions to user-specific storage instead of global storage
+      await courseStorage.saveStudySessions(sessions);
     } catch (error) {
       console.log('Error saving progress data:', error);
     }
   };
 
-  const calculateProgress = () => {
+  const calculateProgress = useCallback(async () => {
     const weeklyData = getWeeklyData();
     const overallData = getOverallData();
-    const courseData = getCourseData();
+    const courseData = await getCourseData();
     const statisticsData = getStudyStatistics();
 
     setWeeklyProgress(weeklyData);
     setOverallProgress(overallData);
     setCourseProgress(courseData);
     setStudyStatistics(statisticsData);
-  };
+  }, [sessions]); // Add sessions as dependency
 
   const getWeeklyData = (): WeeklyProgress[] => {
     const today = new Date();
@@ -177,18 +176,28 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   };
 
-  const getCourseData = (): CourseProgress[] => {
+  const getCourseData = async (): Promise<CourseProgress[]> => {
     const courseMap = new Map<string, CourseProgress>();
 
-    // Initialize courses based on actual sessions
+    // Load actual courses to get real course names
+    let courses: Course[] = [];
+    try {
+      courses = await courseStorage.loadCourses();
+    } catch (error) {
+      console.error('Error loading courses for progress calculation:', error);
+    }
 
     // Calculate progress for each course
     sessions.forEach(session => {
       let courseData = courseMap.get(session.courseId);
       if (!courseData) {
+        // Find the actual course name
+        const course = courses.find(c => c.id === session.courseId);
+        const courseName = course ? course.name : `Course ${session.courseId}`;
+        
         courseData = {
           courseId: session.courseId,
-          courseName: `Course ${session.courseId}`, // Use courseId as fallback name
+          courseName,
           totalSessions: 0,
           completedSessions: 0,
           totalSlides: 0,
@@ -304,8 +313,8 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const updateSessionCompletion = (sessionId: string, completed: boolean, completedSlides?: number) => {
-    setSessions(prevSessions => 
-      prevSessions.map(session => 
+    setSessions(prevSessions => {
+      const updatedSessions = prevSessions.map(session => 
         session.id === sessionId 
           ? { 
               ...session, 
@@ -313,21 +322,48 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               completedSlides: completedSlides !== undefined ? completedSlides : session.completedSlides 
             }
           : session
-      )
-    );
+      );
+      
+      // Save updated sessions to user-specific storage
+      courseStorage.saveStudySessions(updatedSessions).catch(error => {
+        console.error('Error saving updated sessions:', error);
+      });
+      
+      return updatedSessions;
+    });
   };
 
   const addSession = (session: StudySession) => {
-    setSessions(prevSessions => [...prevSessions, session]);
+    setSessions(prevSessions => {
+      const updatedSessions = [...prevSessions, session];
+      
+      // Save updated sessions to user-specific storage
+      courseStorage.saveStudySessions(updatedSessions).catch(error => {
+        console.error('Error saving new session:', error);
+      });
+      
+      return updatedSessions;
+    });
   };
 
   const deleteCourse = (courseId: string) => {
-    setSessions(prevSessions => prevSessions.filter(session => session.courseId !== courseId));
+    setSessions(prevSessions => {
+      const updatedSessions = prevSessions.filter(session => session.courseId !== courseId);
+      
+      // Save updated sessions to user-specific storage
+      courseStorage.saveStudySessions(updatedSessions).catch(error => {
+        console.error('Error saving sessions after course deletion:', error);
+      });
+      
+      return updatedSessions;
+    });
   };
 
-  const refreshProgress = () => {
-    calculateProgress();
-  };
+  const refreshProgress = useCallback(async () => {
+    // Reload sessions from user-specific storage
+    await loadProgressData();
+    // Progress will be calculated automatically via useEffect when sessions change
+  }, []);
 
   return (
     <ProgressContext.Provider value={{

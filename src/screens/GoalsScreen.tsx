@@ -262,7 +262,7 @@ export default function GoalsScreen({ navigation }: any) {
               
               <Input
                 label="Description"
-                placeholder="Optional description"
+                placeholder="Recommended description"
                 value={newGoal.description}
                 onChangeText={(text) => setNewGoal({ ...newGoal, description: text })}
                 multiline
@@ -332,7 +332,7 @@ export default function GoalsScreen({ navigation }: any) {
               <View style={styles.modalRow}>
                 <View style={styles.modalInputHalf}>
                   <Input
-                    label="Target (Optional)"
+                    label="Target (Recommended)"
                     placeholder="e.g., 2"
                     value={newGoal.target}
                     onChangeText={(text) => setNewGoal({ ...newGoal, target: text })}
@@ -342,7 +342,7 @@ export default function GoalsScreen({ navigation }: any) {
                 </View>
                 <View style={styles.modalInputHalf}>
                   <Input
-                    label="Unit (Optional)"
+                    label="Unit (Recommended)"
                     placeholder="e.g., hours"
                     value={newGoal.unit}
                     onChangeText={(text) => setNewGoal({ ...newGoal, unit: text })}

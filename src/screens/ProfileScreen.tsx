@@ -50,10 +50,26 @@ export default function ProfileScreen({ navigation }: any) {
           style: 'destructive', 
           onPress: async () => {
             try {
+              console.log('🚪 User initiated logout...');
               await signOut();
-              navigation.reset({ index: 0, routes: [{ name: 'Auth' as never }] });
-            } catch (e) {
-              Alert.alert('Error', 'Failed to logout. Please try again.');
+              console.log('✅ Logout completed, auth context will handle navigation');
+              // No need to manually navigate - the auth context will automatically 
+              // show the AuthNavigator when user becomes null
+            } catch (error: any) {
+              console.error('Logout error:', error);
+              
+              // Provide more specific error messages
+              let errorMessage = 'Failed to logout. Please try again.';
+              
+              if (error.message.includes('network')) {
+                errorMessage = 'Network error during logout. Please check your connection and try again.';
+              } else if (error.message.includes('session')) {
+                errorMessage = 'Session expired. You will be logged out automatically.';
+                // For session issues, the auth context will handle the navigation automatically
+                return;
+              }
+              
+              Alert.alert('Logout Error', errorMessage);
             }
           }
         },

@@ -30,7 +30,7 @@ const SupabaseForgotPasswordScreen = ({ navigation }: any) => {
       await resetPassword(email.trim());
       Alert.alert(
         'Password Reset Sent',
-        'Please check your email for password reset instructions.',
+        'Please check your email for password reset instructions, then return here to sign in.',
         [
           {
             text: 'OK',

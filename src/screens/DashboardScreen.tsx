@@ -21,6 +21,7 @@ import { useUser } from '../contexts/UserContext';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { useGoals } from '../contexts/GoalsContext';
 import { useProgress } from '../contexts/ProgressContext';
+import { courseService as supabaseCourseService } from '../lib/supabaseCourseService';
 import { courseStorage } from '../lib/courseStorage';
 import { Course, StudySession } from '../lib/types';
 
@@ -37,20 +38,60 @@ export default function DashboardScreen() {
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Load courses and sessions on component mount
+  // Load courses and sessions on component mount and when user changes
   useEffect(() => {
-    loadData();
-  }, []);
+    if (supabaseUser) {
+      loadData();
+    }
+  }, [supabaseUser]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [loadedCourses, loadedSessions] = await Promise.all([
-        courseStorage.loadCourses(),
-        courseStorage.loadStudySessions()
+      
+      if (!supabaseUser) {
+        console.log('No user logged in, skipping dashboard data load');
+        return;
+      }
+
+      // Load courses from both Supabase database AND local storage (similar to other screens)
+      const [databaseCourses, localCourses] = await Promise.all([
+        supabaseCourseService.getCourses(supabaseUser.id).catch(() => []), // Fallback to empty array if database fails
+        courseStorage.loadCourses().catch(() => []) // Load from local storage
       ]);
-      setCourses(loadedCourses);
-      setSessions(loadedSessions);
+
+      // Combine and deduplicate courses (prefer local over database for same ID)
+      const combinedCourses = [...localCourses];
+      databaseCourses.forEach(dbCourse => {
+        if (!combinedCourses.find(localCourse => localCourse.id === dbCourse.id)) {
+          combinedCourses.push(dbCourse);
+        }
+      });
+
+      // Load study sessions from both sources
+      const [databaseSessions, localSessions] = await Promise.all([
+        // Get database sessions for all courses
+        Promise.all(
+          combinedCourses.map(course => 
+            supabaseCourseService.getStudySessions(course.id).catch(() => [])
+          )
+        ).then(sessionArrays => sessionArrays.flat()),
+        // Get local sessions
+        courseStorage.loadStudySessions().catch(() => [])
+      ]);
+
+      // Combine and deduplicate sessions (prefer local over database for same ID)
+      const combinedSessions = [...localSessions];
+      databaseSessions.forEach(dbSession => {
+        if (!combinedSessions.find(localSession => localSession.id === dbSession.id)) {
+          combinedSessions.push(dbSession);
+        }
+      });
+      
+      setCourses(combinedCourses);
+      setSessions(combinedSessions);
+      
+      console.log(`📊 Dashboard loaded: ${combinedCourses.length} courses, ${combinedSessions.length} sessions`);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -399,17 +440,56 @@ export default function DashboardScreen() {
             ) : (
               <>
                 <Text style={[styles.courseName, { color: colors.text }]}>
-                  No study session scheduled
+                  {courses.length > 0 
+                    ? "No study session scheduled for today" 
+                    : "No courses added yet"
+                  }
                 </Text>
                 <Text style={[styles.sessionDescription, { color: colors.textSecondary }]}>
-                  Add a course to get started with your study journey! 🚀
+                  {courses.length > 0 
+                    ? "Visit your courses to start studying anytime! 📚" 
+                    : "Add your first course to get started with your study journey! 🚀"
+                  }
                 </Text>
               </>
             )}
             <View style={styles.sessionActions}>
               <Button 
-                title="Start Session"
-                onPress={() => navigation.navigate('DailyStudy' as never)}
+                title={todaySession && todayCourse ? "Start Session" : courses.length > 0 ? "View Courses" : "Add Course"}
+                onPress={() => {
+                  if (todaySession && todayCourse) {
+                    // Navigate to DailyStudy with proper course and session data
+                    const sessionToNavigate = {
+                      ...todaySession,
+                      date: todaySession.date instanceof Date 
+                        ? todaySession.date.toISOString() 
+                        : typeof todaySession.date === 'string' 
+                          ? todaySession.date 
+                          : new Date().toISOString(),
+                      chunks: todaySession.chunks || [],
+                    };
+                    
+                    const courseToNavigate = {
+                      ...todayCourse,
+                      createdAt: todayCourse.createdAt instanceof Date 
+                        ? todayCourse.createdAt.toISOString() 
+                        : typeof todayCourse.createdAt === 'string' 
+                          ? todayCourse.createdAt 
+                          : new Date().toISOString(),
+                    };
+                    
+                    (navigation as any).navigate('DailyStudy', {
+                      course: courseToNavigate,
+                      session: sessionToNavigate
+                    });
+                  } else if (courses.length > 0) {
+                    // If courses exist but no session today, go to courses screen
+                    navigation.navigate('Courses' as never);
+                  } else {
+                    // If no courses exist, go to add course screen
+                    navigation.navigate('AddCourse' as never);
+                  }
+                }}
                 style={styles.startButton}
                 size="lg"
               />
@@ -427,11 +507,24 @@ export default function DashboardScreen() {
         {/* Enhanced Progress Snapshot - Now after Today's Focus */}
         <TouchableOpacity 
           activeOpacity={0.7}
-          onPress={() => Alert.alert(
-            'Learning Progress',
-            `You've completed ${completedSlides} out of ${totalSlides} slides (${progressPercentage}%).\n\nKeep up the great work!`,
-            [{ text: 'Continue Learning', style: 'default' }]
-          )}
+          onPress={() => {
+            if (totalSlides === 0) {
+              Alert.alert(
+                'Get Started',
+                'No courses added yet. Add your first course to start tracking your learning progress!',
+                [
+                  { text: 'Add Course', onPress: () => navigation.navigate('AddCourse' as never) },
+                  { text: 'Later', style: 'cancel' }
+                ]
+              );
+            } else {
+              Alert.alert(
+                'Learning Progress',
+                `You've completed ${completedSlides} out of ${totalSlides} slides (${progressPercentage}%).\n\nKeep up the great work!`,
+                [{ text: 'Continue Learning', style: 'default' }]
+              );
+            }
+          }}
         >
           <Card style={styles.progressCard}>
           <CardHeader>
@@ -442,33 +535,51 @@ export default function DashboardScreen() {
               </View>
             </CardTitle>
             <View style={styles.progressStats}>
-              <Text style={[styles.percentageText, { color: colors.text }]}>{progressPercentage}% Complete</Text>
+              <Text style={[styles.percentageText, { color: colors.text }]}>
+                {totalSlides === 0 ? "No courses yet" : `${progressPercentage}% Complete`}
+              </Text>
             </View>
           </CardHeader>
           <CardContent>
-            <ProgressBar
-              value={completedSlides}
-              max={totalSlides}
-              showLabel={false}
-              size="lg"
-            />
-            <Text style={[styles.progressText, { color: colors.textSecondary }]}>
-              {getProgressMessage()}
-            </Text>
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.text }]}>{streakDays}</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Day Streak</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.text }]}>{completedThisWeek}/{weeklyGoal}</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>This Week</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.text }]}>{totalSlides - completedSlides}</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Remaining</Text>
-              </View>
-            </View>
+            {totalSlides > 0 ? (
+              <>
+                <ProgressBar
+                  value={completedSlides}
+                  max={totalSlides}
+                  showLabel={false}
+                  size="lg"
+                />
+                <Text style={[styles.progressText, { color: colors.textSecondary }]}>
+                  {getProgressMessage()}
+                </Text>
+                <View style={styles.statsRow}>
+                  <View style={styles.statItem}>
+                    <Text style={[styles.statValue, { color: colors.text }]}>{streakDays}</Text>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Day Streak</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={[styles.statValue, { color: colors.text }]}>{completedThisWeek}/{weeklyGoal}</Text>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>This Week</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={[styles.statValue, { color: colors.text }]}>{totalSlides - completedSlides}</Text>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Remaining</Text>
+                  </View>
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={[styles.emptyProgressContainer, { borderColor: colors.border }]}>
+                  <Ionicons name="school-outline" size={48} color={colors.textSecondary} />
+                  <Text style={[styles.emptyProgressText, { color: colors.text }]}>
+                    Start Your Learning Journey
+                  </Text>
+                  <Text style={[styles.emptyProgressSubtext, { color: colors.textSecondary }]}>
+                    Add courses to track your progress and unlock achievements! 🎯
+                  </Text>
+                </View>
+              </>
+            )}
           </CardContent>
         </Card>
         </TouchableOpacity>
@@ -879,5 +990,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     fontStyle: 'italic',
+  },
+  emptyProgressContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    minHeight: 140,
+  },
+  emptyProgressText: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 12,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyProgressSubtext: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

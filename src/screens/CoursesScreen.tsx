@@ -14,18 +14,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { ProgressBar } from '../components/ui/ProgressBar';
 // Removed dummy data imports
 import { generateSchedules } from '../lib/scheduler';
+import { generateIntelligentSchedules } from '../lib/scheduler';
+import { courseService as supabaseCourseService } from '../lib/supabaseCourseService';
 import { courseStorage } from '../lib/courseStorage';
+import { useAuth } from '../contexts/SupabaseAuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
-import { useUser } from '../contexts/UserContext';
 import { useProgress } from '../contexts/ProgressContext';
 import { Course } from '../lib/types';
 
 export default function CoursesScreen() {
   const navigation = useNavigation();
   const { colors, isDarkMode } = useTheme();
-  const { user } = useUser();
-  const { deleteCourse: deleteCourseFromProgress } = useProgress();
+  const { user } = useAuth();
+  const { deleteCourse: deleteCourseFromProgress, refreshProgress } = useProgress();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -34,14 +36,47 @@ export default function CoursesScreen() {
   useFocusEffect(
     React.useCallback(() => {
       loadCourses();
-    }, [])
+      refreshProgress(); // Also refresh progress data
+    }, []) // Remove refreshProgress dependency to prevent infinite loops
   );
 
   const loadCourses = async () => {
     try {
       setLoading(true);
-      const loadedCourses = await courseStorage.loadCourses();
-      setCourses(loadedCourses);
+      
+      if (!user) {
+        console.log('No user logged in, skipping courses load');
+        return;
+      }
+
+      // Load courses from both local storage and database
+      const [localCourses, databaseCourses] = await Promise.allSettled([
+        courseStorage.loadCourses(),
+        supabaseCourseService.getCourses(user.id)
+      ]);
+
+      const allCourses: Course[] = [];
+
+      // Add local courses
+      if (localCourses.status === 'fulfilled') {
+        allCourses.push(...localCourses.value);
+        console.log(`Loaded ${localCourses.value.length} courses from local storage`);
+      } else {
+        console.error('Error loading local courses:', localCourses.reason);
+      }
+
+      // Add database courses (avoid duplicates)
+      if (databaseCourses.status === 'fulfilled') {
+        const existingIds = new Set(allCourses.map(course => course.id));
+        const uniqueDatabaseCourses = databaseCourses.value.filter(course => !existingIds.has(course.id));
+        allCourses.push(...uniqueDatabaseCourses);
+        console.log(`Loaded ${databaseCourses.value.length} courses from database (${uniqueDatabaseCourses.length} unique)`);
+      } else {
+        console.error('Error loading database courses:', databaseCourses.reason);
+      }
+
+      setCourses(allCourses);
+      console.log(`Total courses loaded: ${allCourses.length}`);
     } catch (error) {
       console.error('Error loading courses:', error);
       Alert.alert('Error', 'Failed to load courses');
@@ -67,13 +102,27 @@ export default function CoursesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Delete course from storage
-              await courseStorage.deleteCourse(course.id);
+              // Delete course from both local storage and database
+              const deleteOperations = [
+                courseStorage.deleteCourse(course.id),
+                supabaseCourseService.deleteCourse(course.id)
+              ];
               
-              // Delete associated study sessions
-              const allSessions = await courseStorage.loadStudySessions();
-              const remainingSessions = allSessions.filter(session => session.courseId !== course.id);
-              await courseStorage.saveStudySessions(remainingSessions);
+              // Execute both deletions, but don't fail if one fails
+              const results = await Promise.allSettled(deleteOperations);
+              
+              // Log results for debugging
+              if (results[0].status === 'fulfilled') {
+                console.log('✅ Course deleted from local storage');
+              } else {
+                console.error('❌ Failed to delete from local storage:', results[0].reason);
+              }
+              
+              if (results[1].status === 'fulfilled') {
+                console.log('✅ Course deleted from database');
+              } else {
+                console.error('❌ Failed to delete from database:', results[1].reason);
+              }
               
               // Update progress context to remove sessions for this course
               deleteCourseFromProgress(course.id);
@@ -94,29 +143,76 @@ export default function CoursesScreen() {
 
   const generateStudySessions = async (course) => {
     try {
-      // Load study sessions from storage
-      const allSessions = await courseStorage.loadStudySessions();
-      const courseSessions = allSessions.filter(session => session.courseId === course.id);
+      console.log('🔍 Looking for study sessions for course:', course.name, course.id);
       
-      if (courseSessions.length > 0) {
-        return courseSessions;
+      // First try to load from database (will work once RLS is fixed)
+      try {
+        const courseSessions = await supabaseCourseService.getStudySessions(course.id);
+        if (courseSessions.length > 0) {
+          console.log('✅ Found', courseSessions.length, 'sessions in database');
+          return courseSessions;
+        }
+      } catch (dbError) {
+        console.warn('⚠️ Database session lookup failed:', dbError);
       }
       
-      // If no sessions found, generate them using the scheduler
-      const startDate = user.preferences.scheduleStartDate ? new Date(user.preferences.scheduleStartDate) : new Date();
-      const endDate = user.preferences.scheduleEndDate ? new Date(user.preferences.scheduleEndDate) : new Date(Date.now() + 21*86400000);
-      const studyDaysOfWeek = user.preferences.studyDays ?? [1,2,3,4,5];
-      const maxSlidesPerSession = user.preferences.maxSlidesPerSession ?? 15;
+      // Then try to load from local storage
+      try {
+        const localSessions = await courseStorage.loadStudySessions();
+        const courseSessions = localSessions.filter(session => session.courseId === course.id);
+        if (courseSessions.length > 0) {
+          console.log('✅ Found', courseSessions.length, 'sessions in local storage');
+          return courseSessions;
+        }
+      } catch (localError) {
+        console.warn('⚠️ Local session lookup failed:', localError);
+      }
 
-      const { byCourse } = generateSchedules({
-        courses: courses,
-        startDate,
-        endDate,
-        studyDaysOfWeek,
-        maxSlidesPerSession,
-      });
+      // If course has AI-processed chunks, generate sessions from them
+      if (course.processedChunks && course.processedChunks.length > 0) {
+        console.log('🧠 Generating sessions from', course.processedChunks.length, 'AI chunks');
+        
+        const startDate = new Date();
+        const endDate = new Date(Date.now() + 21*86400000); // 21 days from now
+        
+        const generatedSchedule = await generateIntelligentSchedules({
+          courses: [course],
+          startDate,
+          endDate,
+          studyDaysOfWeek: [1,2,3,4,5], // Monday to Friday
+          maxStudyTimePerSession: 60, // 60 minutes
+          preferredChunkSize: 'medium',
+        });
+        
+        if (generatedSchedule.allSessions.length > 0) {
+          console.log('✅ Generated', generatedSchedule.allSessions.length, 'new sessions');
+          // Save to local storage
+          await courseStorage.saveStudySessions(generatedSchedule.allSessions);
+          return generatedSchedule.allSessions;
+        }
+      }
 
-      return byCourse[course.id] || [];
+      // Last resort: use old scheduler if course has slides
+      if (course.totalSlides > 0) {
+        console.log('📝 Falling back to slide-based generation for', course.totalSlides, 'slides');
+        const startDate = new Date();
+        const endDate = new Date(Date.now() + 21*86400000); // 21 days from now
+        const studyDaysOfWeek = [1,2,3,4,5]; // Monday to Friday
+        const maxSlidesPerSession = 15;
+
+        const { byCourse } = generateSchedules({
+          courses: [course],
+          startDate,
+          endDate,
+          studyDaysOfWeek,
+          maxSlidesPerSession,
+        });
+
+        return byCourse[course.id] || [];
+      }
+
+      console.log('❌ No way to generate sessions - no chunks and no slides');
+      return [];
     } catch (error) {
       console.error('Error loading study sessions:', error);
       return [];
@@ -130,7 +226,7 @@ export default function CoursesScreen() {
         // Navigate to course detail
         Alert.alert(
           'Course Details',
-          `${course.name}\n\nCategory: ${course.category}\nFiles: ${course.files.length}\nProgress: ${course.totalSlides > 0 ? Math.round((course.completedSlides / course.totalSlides) * 100) : 0}%\n\nWould you like to start studying this course?`,
+          `${course.name}\n\nCategory: ${course.category}\nFiles: ${course.files?.length || 0}\nProgress: ${course.totalSlides > 0 ? Math.round((course.completedSlides / course.totalSlides) * 100) : 0}%\n\nWould you like to start studying this course?`,
           [
             { text: 'Cancel', style: 'cancel' },
             { 
@@ -139,7 +235,10 @@ export default function CoursesScreen() {
                 const sessions = await generateStudySessions(course);
                 if (sessions.length > 0) {
                   (navigation as any).navigate('DailyStudy', {
-                    course: course,
+                    course: {
+                      ...course,
+                      createdAt: course.createdAt.toISOString(), // Serialize Date to string
+                    },
                     session: sessions[0] // Use first session for now
                   });
                 } else {
@@ -182,7 +281,7 @@ export default function CoursesScreen() {
         <CardContent>
           <Text style={[styles.courseName, { color: colors.text }]}>{course.name}</Text>
           <Text style={[styles.fileCount, { color: colors.textSecondary }]}>
-            {course.files.length} file{course.files.length !== 1 ? 's' : ''} uploaded
+            {course.files?.length || 0} file{(course.files?.length || 0) !== 1 ? 's' : ''} uploaded
           </Text>
           
           <View style={styles.progressContainer}>
@@ -218,31 +317,121 @@ export default function CoursesScreen() {
                 const rawSessions = await generateStudySessions(course);
                 if (rawSessions && rawSessions.length > 0) {
                   const studySessions = rawSessions.map(s => ({ ...s, date: s.date.toISOString() }));
-                  (navigation as any).navigate('StudySchedule', { course, studySessions });
-                } else {
-                  Alert.alert('No Sessions', 'No study sessions available for this course.');
-                }
-              }}
-            >
-              <Ionicons name="calendar-outline" size={16} color="#FFFFFF" />
-              <Text style={styles.actionButtonText}>Study Schedule</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.secondaryButton]}
-              onPress={async () => {
-                const sessions = await generateStudySessions(course);
-                if (sessions.length > 0) {
-                  (navigation as any).navigate('DailyStudy', {
-                    course: course,
-                    session: sessions[0] // Use first session for now
+                  (navigation as any).navigate('StudySchedule', { 
+                    course: {
+                      ...course,
+                      createdAt: course.createdAt.toISOString(), // Serialize Date to string
+                    }, 
+                    studySessions 
                   });
                 } else {
                   Alert.alert('No Sessions', 'No study sessions available for this course.');
                 }
               }}
             >
+              <Ionicons name="calendar-outline" size={16} color={colors.text} />
+              <Text style={[styles.actionButtonText, { color: colors.text }]}>Study Schedule</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.secondaryButton]}
+              onPress={async () => {
+                console.log('🎯 Start Study button clicked for course:', course.name);
+                const sessions = await generateStudySessions(course);
+                console.log('🎯 Sessions found:', sessions.length);
+                if (sessions.length > 0) {
+                  console.log('🎯 First session details:');
+                  console.log('  - ID:', sessions[0].id);
+                  console.log('  - Date:', sessions[0].date);
+                  console.log('  - Chunks:', sessions[0].chunks?.length || 0);
+                  console.log('  - Total time:', sessions[0].totalEstimatedTime || 0, 'minutes');
+                  
+                  // Debug: Show all sessions
+                  sessions.forEach((session, index) => {
+                    console.log(`📚 Session ${index + 1}:`, {
+                      id: session.id,
+                      chunks: session.chunks?.length || 0,
+                      time: session.totalEstimatedTime || 0,
+                      date: session.date
+                    });
+                  });
+                  
+                  console.log('🎯 Navigating to DailyStudy with session:', sessions[0].id);
+                  console.log('🔍 Session date type:', typeof sessions[0].date, sessions[0].date);
+                  console.log('🔍 Course createdAt type:', typeof course.createdAt, course.createdAt);
+                  try {
+                    const sessionToNavigate = {
+                      ...sessions[0],
+                      date: sessions[0].date instanceof Date 
+                        ? sessions[0].date.toISOString() 
+                        : typeof sessions[0].date === 'string' 
+                          ? sessions[0].date 
+                          : new Date().toISOString(), // Fallback to current date
+                      chunks: sessions[0].chunks || [], // Ensure chunks is always an array
+                    };
+                    
+                    const courseToNavigate = {
+                      ...course,
+                      createdAt: course.createdAt instanceof Date 
+                        ? course.createdAt.toISOString() 
+                        : typeof course.createdAt === 'string' 
+                          ? course.createdAt 
+                          : new Date().toISOString(), // Fallback to current date
+                    };
+                    
+                    (navigation as any).navigate('DailyStudy', {
+                      course: courseToNavigate,
+                      session: sessionToNavigate
+                    });
+                    console.log('🎯 Navigation call completed');
+                  } catch (navError) {
+                    console.error('❌ Navigation error:', navError);
+                    Alert.alert('Navigation Error', 'Failed to navigate to study session. Please try again.');
+                  }
+                } else {
+                  console.log('❌ No sessions found for course');
+                  Alert.alert('No Sessions', 'No study sessions available for this course.');
+                }
+              }}
+            >
               <Ionicons name="play-outline" size={16} color={course.color} />
               <Text style={[styles.actionButtonText, { color: course.color }]}>Start Study</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.actionButton, styles.secondaryButton]}
+              onPress={async () => {
+                const sessions = await generateStudySessions(course);
+                if (sessions.length > 0) {
+                  Alert.alert(
+                    'Study Sessions Available',
+                    `You have ${sessions.length} study sessions for this course.\n\nTotal study time: ${Math.round(sessions.reduce((sum, s) => sum + (s.totalEstimatedTime || 0), 0))} minutes\n\nWould you like to see all sessions?`,
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { 
+                        text: 'View All Sessions', 
+                        onPress: async () => {
+                          const studySessions = sessions.map(s => ({ 
+                            ...s, 
+                            date: s.date instanceof Date ? s.date.toISOString() : s.date 
+                          }));
+                          (navigation as any).navigate('StudySchedule', { 
+                            course: {
+                              ...course,
+                              createdAt: course.createdAt instanceof Date ? course.createdAt.toISOString() : course.createdAt,
+                            }, 
+                            studySessions 
+                          });
+                        }
+                      }
+                    ]
+                  );
+                } else {
+                  Alert.alert('No Sessions', 'No study sessions available for this course.');
+                }
+              }}
+            >
+              <Ionicons name="calendar-outline" size={16} color={colors.text} />
+              <Text style={[styles.actionButtonText, { color: colors.text }]}>View Sessions</Text>
             </TouchableOpacity>
           </View>
           

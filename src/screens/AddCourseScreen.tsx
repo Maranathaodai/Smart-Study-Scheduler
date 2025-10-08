@@ -13,19 +13,22 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { ProgressBar } from '../components/ui/ProgressBar';
+import { processingTracker, ProcessingProgress } from '../lib/processingTracker';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, differenceInDays, addDays } from 'date-fns';
-import * as DocumentPicker from 'expo-document-picker';
 import { useTheme } from '../contexts/ThemeContext';
 import { courseService } from '../lib/courseService';
-import { generateIntelligentSchedules } from '../lib/scheduler';
+import { courseService as supabaseCourseService } from '../lib/supabaseCourseService';
+import { useAuth } from '../contexts/SupabaseAuthContext';
+import { generateIntelligentSchedules, calculateAISessionCount } from '../lib/scheduler';
 import { courseStorage } from '../lib/courseStorage';
 import { Course, StudySession } from '../lib/types';
 
 export default function AddCourseScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const { user } = useAuth();
   const [courseName, setCourseName] = useState('');
   const [category, setCategory] = useState('');
   const [customCategory, setCustomCategory] = useState('');
@@ -36,7 +39,6 @@ export default function AddCourseScreen() {
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [studySessions, setStudySessions] = useState<StudySession[]>([]);
   const [showSchedule, setShowSchedule] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [isEditingSchedule, setIsEditingSchedule] = useState(false);
   const [courseContent, setCourseContent] = useState('');
   
@@ -44,6 +46,7 @@ export default function AddCourseScreen() {
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [processingStatus, setProcessingStatus] = useState('');
+  const [processingDetails, setProcessingDetails] = useState<ProcessingProgress | null>(null);
   const [course, setCourse] = useState<Course | null>(null);
   const [aiGeneratedChunks, setAiGeneratedChunks] = useState<any[]>([]);
   const [maxStudyTimePerSession, setMaxStudyTimePerSession] = useState(60); // minutes
@@ -60,9 +63,31 @@ export default function AddCourseScreen() {
     'Other',
   ];
 
+  // Listen to processing progress updates
+  React.useEffect(() => {
+    const handleProgressUpdate = (progress: ProcessingProgress) => {
+      setProcessingDetails(progress);
+      setProcessingProgress(progress.progress);
+      setProcessingStatus(progress.status);
+    };
+
+    const handleComplete = () => {
+      setIsProcessingFiles(false);
+      setProcessingDetails(null);
+    };
+
+    processingTracker.on('progress', handleProgressUpdate);
+    processingTracker.on('complete', handleComplete);
+
+    return () => {
+      processingTracker.off('progress', handleProgressUpdate);
+      processingTracker.off('complete', handleComplete);
+    };
+  }, []);
+
   const generateSmartSchedule = async () => {
     if (!course || !startDate || !endDate) {
-      Alert.alert('Error', 'Please upload files and set study dates first');
+      Alert.alert('Error', 'Please process content and set study dates first');
       return;
     }
 
@@ -74,7 +99,7 @@ export default function AddCourseScreen() {
     }
 
     if (!course.processedChunks || course.processedChunks.length === 0) {
-      Alert.alert('Error', 'No processed content available. Please upload and process files first.');
+      Alert.alert('Error', 'No processed content available. Please process content first.');
       return;
     }
 
@@ -91,18 +116,40 @@ export default function AddCourseScreen() {
         preferredChunkSize,
       });
 
-      setStudySessions(schedule.allSessions);
+      // Save study sessions to local storage only (avoid database RLS issues)
+      const savedSessions: StudySession[] = [];
+      try {
+        // Use the generated sessions directly
+        for (const session of schedule.allSessions) {
+          savedSessions.push(session);
+        }
+        // Save to local storage
+        await courseStorage.saveStudySessions(savedSessions);
+        console.log('✅ Successfully saved study sessions to local storage');
+      } catch (sessionError) {
+        console.error('❌ Failed to save sessions to local storage:', sessionError);
+        Alert.alert('Error', 'Failed to save study sessions. Please try again.');
+        return;
+      }
+
+      setStudySessions(savedSessions);
       setShowSchedule(true);
       
       Alert.alert(
         'Smart Schedule Generated! 🎉',
-        `Created ${schedule.allSessions.length} intelligent study sessions based on your uploaded content.`,
+        `Created ${savedSessions.length} intelligent study sessions based on your course content.\n\nYour schedule has been saved!`,
         [
           {
             text: 'View Schedule',
             onPress: () => (navigation as any).navigate('StudySchedule', {
-              course: course,
-              studySessions: schedule.allSessions
+              course: {
+                ...course,
+                createdAt: course.createdAt.toISOString(), // Serialize Date to string
+              },
+              studySessions: savedSessions.map(session => ({
+                ...session,
+                date: session.date.toISOString(), // Serialize Date to string
+              }))
             })
           }
         ]
@@ -112,35 +159,6 @@ export default function AddCourseScreen() {
       Alert.alert('Error', 'Failed to generate smart schedule. Please try again.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleFileUpload = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'image/*', 'text/plain', 'text/markdown'],
-        copyToCacheDirectory: true,
-        multiple: true,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const newFiles = result.assets.map(file => ({
-          id: Date.now() + Math.random(),
-          name: file.name,
-          type: file.mimeType || 'unknown',
-          size: file.size || 0,
-          uri: file.uri,
-          uploadedAt: new Date(),
-        }));
-
-        setUploadedFiles(prev => [...prev, ...newFiles]);
-        
-        // Automatically process files with AI
-        await processFilesWithAI(newFiles);
-      }
-    } catch (error) {
-      console.error('Error picking document:', error);
-      Alert.alert('Error', 'Failed to upload file. Please try again.');
     }
   };
 
@@ -160,20 +178,26 @@ export default function AddCourseScreen() {
       setProcessingProgress(0);
       setProcessingStatus('Creating course...');
 
-      // Create course with unique color
+      if (!user) {
+        Alert.alert('Error', 'You must be logged in to create courses');
+        return;
+      }
+
+      // Create course in database with unique color
       const uniqueColor = courseStorage.generateUniqueColor();
       const finalCategory = category === 'Other' ? customCategory : category;
-      const newCourse = await courseService.createCourse(
+      const newCourse = await supabaseCourseService.createCourse(
         courseName,
         finalCategory,
         'medium', // Default difficulty
         5, // Default priority
-        uniqueColor // Unique color
+        uniqueColor, // Unique color
+        user.id // User ID
       );
 
       setCourse(newCourse);
-      setProcessingProgress(20);
-      setProcessingStatus('Processing manual content...');
+      setProcessingProgress(40);
+      setProcessingStatus('Processing content with AI...');
 
       // Process manual content
       const processingResult = await courseService.processManualContent(courseContent, courseName);
@@ -191,15 +215,27 @@ export default function AddCourseScreen() {
           processingStatus: 'completed' as const,
         };
         
+        // Save updated course to database
+        await supabaseCourseService.updateCourse(newCourse.id, {
+          processedChunks: processingResult.chunks,
+          keyConcepts: processingResult.keyConcepts,
+          totalEstimatedTime: processingResult.totalEstimatedTime,
+          processingStatus: 'completed',
+          lastProcessed: new Date(),
+        });
+        
         setCourse(updatedCourse);
         setAiGeneratedChunks(processingResult.chunks);
         
         setProcessingProgress(100);
         setProcessingStatus('Processing complete!');
         
+        // Estimate number of sessions that will be generated
+        const estimatedSessions = calculateAISessionCount([updatedCourse]);
+
         Alert.alert(
           'AI Processing Complete! 🎉',
-          `Successfully processed your content into ${processingResult.chunks.length} intelligent study chunks.\n\nTotal estimated study time: ${Math.round(processingResult.totalEstimatedTime)} minutes\n\nSchedule will be generated automatically!`,
+          `Successfully processed your content into ${processingResult.chunks?.length || 0} intelligent study chunks.\n\nThis will generate approximately ${estimatedSessions} study sessions.\n\nTotal estimated study time: ${Math.round(processingResult.totalEstimatedTime || 0)} minutes\n\nYou can now create the course and generate the schedule separately.`,
           [
             {
               text: 'Great!',
@@ -207,10 +243,7 @@ export default function AddCourseScreen() {
                 setIsProcessingFiles(false);
                 setProcessingProgress(0);
                 setProcessingStatus('');
-                // Automatically generate schedule after processing
-                setTimeout(() => {
-                  generateSmartSchedule();
-                }, 500);
+                // Don't automatically generate schedule - let user do it manually
               }
             }
           ]
@@ -233,120 +266,6 @@ export default function AddCourseScreen() {
         ]
       );
     }
-  };
-
-  const processFilesWithAI = async (files: any[]) => {
-    if (!courseName.trim() || !category) {
-      Alert.alert('Error', 'Please enter course name and select category first');
-      return;
-    }
-
-    try {
-      setIsProcessingFiles(true);
-      setProcessingProgress(0);
-      setProcessingStatus('Creating course...');
-
-      // Create course with unique color
-      const uniqueColor = courseStorage.generateUniqueColor();
-      const finalCategory = category === 'Other' ? customCategory : category;
-      const newCourse = await courseService.createCourse(
-        courseName,
-        finalCategory,
-        'medium', // Default difficulty
-        5, // Default priority
-        uniqueColor // Unique color
-      );
-
-      setCourse(newCourse);
-      setProcessingProgress(20);
-      setProcessingStatus('Adding files to course...');
-
-      // Add files to course manually
-      const courseWithFiles = {
-        ...newCourse,
-        files: files.map(file => ({
-          id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          uploadedAt: new Date(),
-          uri: file.uri, // Pass the actual file URI
-        }))
-      };
-      
-      setProcessingProgress(40);
-      setProcessingStatus('Processing content with AI...');
-
-      // Use manual content if provided, otherwise process files
-      let processingResult;
-      if (courseContent.trim()) {
-        // Use manual content input
-        setProcessingStatus('Processing manual content...');
-        processingResult = await courseService.processManualContent(courseContent, courseName);
-      } else {
-        // Process uploaded files
-        processingResult = await courseService.processCourseContent(courseWithFiles);
-      }
-      
-      if (processingResult) {
-        setProcessingProgress(80);
-        setProcessingStatus('Generating study chunks...');
-        
-        // Update course with processed content
-        const updatedCourse = {
-          ...courseWithFiles,
-          processedChunks: processingResult.chunks,
-          keyConcepts: processingResult.keyConcepts,
-          totalEstimatedTime: processingResult.totalEstimatedTime,
-          processingStatus: 'completed' as const,
-        };
-        
-        setCourse(updatedCourse);
-        setAiGeneratedChunks(processingResult.chunks);
-        
-        setProcessingProgress(100);
-        setProcessingStatus('Processing complete!');
-        
-        Alert.alert(
-          'AI Processing Complete! 🎉',
-          `Successfully processed ${files.length} file(s) into ${processingResult.chunks.length} intelligent study chunks.\n\nTotal estimated study time: ${Math.round(processingResult.totalEstimatedTime)} minutes\n\nSchedule will be generated automatically!`,
-          [
-            {
-              text: 'Great!',
-              onPress: () => {
-                setIsProcessingFiles(false);
-                setProcessingProgress(0);
-                setProcessingStatus('');
-                // Automatically generate schedule after processing
-                setTimeout(() => {
-                  generateSmartSchedule();
-                }, 500);
-              }
-            }
-          ]
-        );
-      }
-    } catch (error) {
-      console.error('Error processing files:', error);
-      Alert.alert(
-        'Processing Error',
-        `Failed to process files: ${error.message}\n\nDon't worry! You can still create a course manually.`,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              setIsProcessingFiles(false);
-              setProcessingProgress(0);
-              setProcessingStatus('');
-            }
-          }
-        ]
-      );
-    }
-  };
-
-  const removeFile = (fileId) => {
-    setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
   };
 
   const shiftSession = (sessionId, direction) => {
@@ -414,15 +333,27 @@ export default function AddCourseScreen() {
     }
 
     if (!course || course.processingStatus !== 'completed') {
-      Alert.alert('Error', 'Please upload and process files first');
+      Alert.alert('Error', 'Please process content first');
       return;
     }
 
     setLoading(true);
     
     try {
-      // Save course to storage
-      await courseStorage.addCourse(course);
+      if (!user) {
+        Alert.alert('Error', 'You must be logged in to create courses');
+        return;
+      }
+
+      // Save course to local storage (database saving can be added later)  
+      try {
+        // For now, just save to local storage to avoid RLS issues
+        await courseStorage.addCourse(course);
+        console.log('✅ Course saved to local storage');
+      } catch (localError) {
+        console.error('❌ Failed to save course to local storage:', localError);
+        throw localError;
+      }
       
       // Generate study sessions if they don't exist
       let sessionsToSave = studySessions;
@@ -440,15 +371,24 @@ export default function AddCourseScreen() {
         setStudySessions(generatedSessions.allSessions);
       }
       
-      // Save study sessions
+      // Save study sessions to local storage (database saving can be added later)
       if (sessionsToSave.length > 0) {
-        await courseStorage.saveStudySessions(sessionsToSave);
+        try {
+          // For now, just save to local storage to avoid RLS issues
+          await courseStorage.saveStudySessions(sessionsToSave);
+          console.log('✅ Study sessions saved to local storage');
+        } catch (localError) {
+          console.error('❌ Failed to save sessions to local storage:', localError);
+        }
       }
       
       setLoading(false);
+      // Estimate final session count
+      const finalEstimatedSessions = calculateAISessionCount([course]);
+
       Alert.alert(
         'Success! 🎉', 
-        `Course "${courseName}" has been created successfully with ${course.processedChunks?.length || 0} intelligent study chunks!\n\nColor: ${course.color}`,
+        `Course "${courseName}" has been created successfully!\n\n• ${course.processedChunks?.length || 0} study chunks\n• Approximately ${finalEstimatedSessions} study sessions\n• Color: ${course.color}`,
         [
           { 
             text: 'View Course', 
@@ -587,54 +527,28 @@ export default function AddCourseScreen() {
 
         <Card style={styles.card}>
           <CardHeader>
-            <CardTitle>Upload Materials</CardTitle>
+            <CardTitle>Course Content</CardTitle>
           </CardHeader>
           <CardContent>
-            <TouchableOpacity 
-              style={styles.uploadButton} 
-              onPress={handleFileUpload}
-              disabled={isProcessingFiles}
-            >
-              <Ionicons name="cloud-upload-outline" size={32} color="#007AFF" />
-              <Text style={styles.uploadText}>
-                {isProcessingFiles ? 'Processing...' : 'Tap to upload files'}
-              </Text>
-              <Text style={styles.uploadSubtext}>
-                PDF, Images, Text files supported
-              </Text>
-            </TouchableOpacity>
-            
-            {isProcessingFiles && (
-              <View style={styles.processingContainer}>
-                <Text style={styles.processingStatus}>{processingStatus}</Text>
-                <ProgressBar
-                  value={processingProgress}
-                  max={100}
-                  showLabel
-                  size="lg"
-                />
-              </View>
-            )}
-
             {/* Manual Content Input */}
             <View style={styles.contentInputContainer}>
               <Text style={styles.contentInputLabel}>
-                📝 Additional Content Input (Optional):
+                📝 Course Content Input:
               </Text>
               <Text style={[styles.contentInputSubtext, { color: colors.textSecondary }]}>
-                You can either upload files (which will be processed with AI) or paste content here, or both! The AI will process both sources to create comprehensive study chunks.
+                Paste your course content here. You can copy text from your PDFs, documents, or any study materials to create AI-powered study chunks.
               </Text>
               <Input
                 label="Course Content"
-                placeholder="Paste additional content here, or leave empty to use only uploaded files..."
+                placeholder="Paste your course content here..."
                 value={courseContent}
                 onChangeText={setCourseContent}
                 multiline
-                numberOfLines={6}
+                numberOfLines={8}
                 style={styles.contentInput}
               />
               <Text style={styles.contentInputHint}>
-                This content will be used to create study chunks. You can copy text from your PDF or image files.
+                This content will be processed by AI to create optimized study chunks and learning objectives.
               </Text>
               
               {courseContent.trim() && (!course || course.processingStatus !== 'completed') && (
@@ -680,37 +594,6 @@ export default function AddCourseScreen() {
                     </View>
                   )}
                 </View>
-              </View>
-            )}
-            
-            {uploadedFiles.length > 0 && (
-              <View style={styles.uploadedFilesContainer}>
-                <Text style={styles.uploadedFilesTitle}>Uploaded Files ({uploadedFiles.length})</Text>
-                {uploadedFiles.map((file) => (
-                  <View key={file.id} style={styles.fileItem}>
-                    <View style={styles.fileInfo}>
-                      <Ionicons 
-                        name={file.type.includes('pdf') ? 'document-text' : 
-                              file.type.includes('word') ? 'document' : 
-                              file.type.includes('powerpoint') ? 'easel' : 'document'} 
-                        size={20} 
-                        color="#007AFF" 
-                      />
-                      <View style={styles.fileDetails}>
-                        <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
-                        <Text style={styles.fileSize}>
-                          {file.size > 0 ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : 'Unknown size'}
-                        </Text>
-                      </View>
-                    </View>
-                    <TouchableOpacity 
-                      style={styles.removeFileButton}
-                      onPress={() => removeFile(file.id)}
-                    >
-                      <Ionicons name="close-circle" size={20} color="#FF3B30" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
               </View>
             )}
           </CardContent>
@@ -952,67 +835,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     backgroundColor: '#FFFFFF',
-  },
-  uploadButton: {
-    borderWidth: 2,
-    borderColor: '#D1D1D6',
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    padding: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  uploadText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#000000',
-    marginTop: 12,
-  },
-  uploadSubtext: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginTop: 4,
-  },
-  uploadedFilesContainer: {
-    marginTop: 16,
-  },
-  uploadedFilesTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 12,
-  },
-  fileItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  fileInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  fileDetails: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  fileName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#000000',
-    marginBottom: 2,
-  },
-  fileSize: {
-    fontSize: 12,
-    color: '#8E8E93',
-  },
-  removeFileButton: {
-    padding: 4,
   },
   scheduleHeader: {
     flexDirection: 'row',

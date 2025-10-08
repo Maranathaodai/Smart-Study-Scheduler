@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "scheme": "smartstudyscheduler",
     "splash": {
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
@@ -27,7 +28,8 @@
     },
     "sdkVersion": "54.0.0",
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-web-browser"
     ]
   }
 }

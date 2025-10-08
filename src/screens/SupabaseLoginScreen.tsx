@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/SupabaseAuthContext';
@@ -73,6 +74,7 @@ const SupabaseLoginScreen = ({ navigation }: any) => {
     navigation.navigate('SignUp');
   };
 
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -119,6 +121,7 @@ const SupabaseLoginScreen = ({ navigation }: any) => {
               style={styles.forgotButton}
             />
           </View>
+
 
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: colors.textSecondary }]}>

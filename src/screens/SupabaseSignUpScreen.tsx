@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/SupabaseAuthContext';
@@ -42,8 +43,8 @@ const SupabaseSignUpScreen = ({ navigation }: any) => {
     try {
       await signUp(email.trim(), password, fullName.trim());
       Alert.alert(
-        'Success!',
-        'Account created successfully! You can now sign in with your email or full name.',
+        'Account Created!',
+        'Account Creation Successful',
         [
           {
             text: 'OK',
@@ -61,6 +62,7 @@ const SupabaseSignUpScreen = ({ navigation }: any) => {
   const handleSignIn = () => {
     navigation.navigate('Login');
   };
+
 
   return (
     <KeyboardAvoidingView
@@ -117,6 +119,7 @@ const SupabaseSignUpScreen = ({ navigation }: any) => {
               style={styles.signUpButton}
             />
           </View>
+
 
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: colors.textSecondary }]}>

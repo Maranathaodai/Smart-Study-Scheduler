@@ -30,6 +30,127 @@ export interface GeneratedSchedules {
   allSessions: StudySession[];
 }
 
+// AI-driven session count calculation based on processed chunks
+export function calculateAISessionCount(courses: Course[]): number {
+  console.log('🧠 Calculating AI-driven session count...');
+  
+  const coursesWithChunks = courses.filter(course => 
+    course.processedChunks && 
+    course.processedChunks.length > 0 &&
+    course.processingStatus === 'completed'
+  );
+
+  if (coursesWithChunks.length === 0) {
+    console.log('No courses with processed chunks found');
+    return 0;
+  }
+
+  let totalSessions = 0;
+  
+  for (const course of coursesWithChunks) {
+    if (!course.processedChunks) continue;
+    
+    const chunkCount = course.processedChunks.length;
+    console.log(`Course "${course.name}" has ${chunkCount} AI-processed chunks`);
+    
+    // Each chunk becomes one study session (AI's recommendation)
+    totalSessions += chunkCount;
+  }
+  
+  console.log(`🎯 AI recommends ${totalSessions} total study sessions`);
+  return totalSessions;
+}
+
+// Helper function to estimate number of sessions that will be generated (legacy)
+export function estimateSessionCount(
+  courses: Course[],
+  startDate: Date,
+  endDate: Date,
+  studyDaysOfWeek: number[],
+  maxStudyTimePerSession: number,
+  preferredChunkSize: 'small' | 'medium' | 'large'
+): number {
+  // Use AI-driven calculation if available
+  const aiSessionCount = calculateAISessionCount(courses);
+  if (aiSessionCount > 0) {
+    return aiSessionCount;
+  }
+  
+  // Fallback to original calculation
+  const validDates: Date[] = [];
+  const cursor = new Date(startDate);
+  while (cursor <= endDate) {
+    if (studyDaysOfWeek.includes(cursor.getDay())) {
+      validDates.push(new Date(cursor));
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  if (validDates.length === 0) return 0;
+
+  const coursesWithChunks = courses.filter(course => 
+    course.processedChunks && 
+    course.processedChunks.length > 0 &&
+    course.processingStatus === 'completed'
+  );
+
+  if (coursesWithChunks.length === 0) return 0;
+
+  const chunkSizeMultipliers = {
+    small: 0.7,
+    medium: 1.0,
+    large: 1.3,
+  };
+  const adjustedMaxTime = maxStudyTimePerSession * chunkSizeMultipliers[preferredChunkSize];
+
+  let totalSessions = 0;
+  const courseSessionsByDate: Record<string, number> = {};
+
+  for (const course of coursesWithChunks) {
+    if (!course.processedChunks) continue;
+
+    const remainingChunks = course.processedChunks.filter(chunk => 
+      !chunk.content.some(c => c.completed)
+    );
+
+    if (remainingChunks.length === 0) continue;
+
+    let chunkIndex = 0;
+    for (const date of validDates) {
+      if (chunkIndex >= remainingChunks.length) break;
+
+      const dateKey = date.toDateString();
+      
+      // Check if this date already has 2 courses
+      if (courseSessionsByDate[dateKey] && courseSessionsByDate[dateKey] >= 2) {
+        continue; // Skip this date, try next one
+      }
+
+      let sessionTime = 0;
+      let sessionChunkCount = 0;
+
+      // Add chunks until we reach the time limit
+      while (chunkIndex < remainingChunks.length && sessionTime < adjustedMaxTime) {
+        const chunk = remainingChunks[chunkIndex];
+        if (sessionTime + chunk.estimatedTime <= adjustedMaxTime) {
+          sessionTime += chunk.estimatedTime;
+          sessionChunkCount++;
+          chunkIndex++;
+        } else {
+          break;
+        }
+      }
+
+      if (sessionChunkCount > 0) {
+        totalSessions++;
+        courseSessionsByDate[dateKey] = (courseSessionsByDate[dateKey] || 0) + 1;
+      }
+    }
+  }
+
+  return totalSessions;
+}
+
 export function generateSchedules(params: GenerateParams): GeneratedSchedules {
   const { courses, startDate, endDate, studyDaysOfWeek, maxSlidesPerSession } = params;
 
@@ -130,9 +251,13 @@ export function generateSchedules(params: GenerateParams): GeneratedSchedules {
   return { byCourse: sessionsByCourse, allSessions };
 }
 
-// New intelligent scheduling function that works with AI-processed chunks
+// AI-driven intelligent scheduling that respects AI chunk recommendations
 export function generateIntelligentSchedules(params: IntelligentGenerateParams): GeneratedSchedules {
   const { courses, startDate, endDate, studyDaysOfWeek, maxStudyTimePerSession, preferredChunkSize } = params;
+
+  console.log('🧠 Generating AI-driven intelligent schedules...');
+  console.log('📅 Date range:', startDate.toDateString(), 'to', endDate.toDateString());
+  console.log('📚 Courses:', courses.length);
 
   const validDates: Date[] = [];
   const cursor = new Date(startDate);
@@ -144,8 +269,11 @@ export function generateIntelligentSchedules(params: IntelligentGenerateParams):
   }
 
   if (validDates.length === 0) {
+    console.log('❌ No valid study dates found');
     return { byCourse: {}, allSessions: [] };
   }
+
+  console.log('📅 Valid study dates:', validDates.length);
 
   // Filter courses that have processed chunks
   const coursesWithChunks = courses.filter(course => 
@@ -155,15 +283,17 @@ export function generateIntelligentSchedules(params: IntelligentGenerateParams):
   );
 
   if (coursesWithChunks.length === 0) {
-    // Fallback to original scheduling if no processed chunks available
+    console.log('⚠️ No courses with processed chunks, falling back to original scheduling');
     return generateSchedules({
       courses,
       startDate,
       endDate,
       studyDaysOfWeek,
-      maxSlidesPerSession: Math.floor(maxStudyTimePerSession / 2), // Rough conversion
+      maxSlidesPerSession: Math.floor(maxStudyTimePerSession / 2),
     });
   }
+
+  console.log('✅ Courses with AI chunks:', coursesWithChunks.length);
 
   // Calculate chunk size preferences
   const chunkSizeMultipliers = {
@@ -172,34 +302,52 @@ export function generateIntelligentSchedules(params: IntelligentGenerateParams):
     large: 1.3,
   };
   const adjustedMaxTime = maxStudyTimePerSession * chunkSizeMultipliers[preferredChunkSize];
+  
+  console.log(`⏱️ Max study time per session: ${maxStudyTimePerSession}min`);
+  console.log(`📏 Chunk size preference: ${preferredChunkSize} (multiplier: ${chunkSizeMultipliers[preferredChunkSize]})`);
+  console.log(`⏱️ Adjusted max time: ${adjustedMaxTime}min`);
 
   const sessionsByCourse: Record<string, StudySession[]> = {};
   let sessionAutoId = 1;
 
-  // Create intelligent sessions based on chunks with max 2 courses per day
+  // Create intelligent sessions based on AI chunks, grouping them by time constraints
   const courseSessionsByDate: Record<string, Array<{courseId: string, session: StudySession}>> = {};
 
   for (const course of coursesWithChunks) {
     if (!course.processedChunks) continue;
 
+    console.log(`📖 Processing course "${course.name}" with ${course.processedChunks.length} chunks`);
+    
+    // Debug: Show chunk details
+    course.processedChunks.forEach((chunk, i) => {
+      console.log(`  Chunk ${i + 1}: "${chunk.title}" - ${chunk.estimatedTime}min`);
+    });
+
     const remainingChunks = course.processedChunks.filter(chunk => 
       !chunk.content.some(c => c.completed) // Simple completion check
     );
 
-    if (remainingChunks.length === 0) continue;
+    if (remainingChunks.length === 0) {
+      console.log(`✅ All chunks completed for "${course.name}"`);
+      continue;
+    }
 
     // Sort chunks by order and prerequisites
     const sortedChunks = sortChunksByDependencies(remainingChunks);
+    console.log(`📋 Sorted ${sortedChunks.length} remaining chunks by dependencies`);
 
-    // Distribute chunks across available study dates
+    // Group chunks into sessions based on time constraints
     let chunkIndex = 0;
+    let sessionCount = 0;
+    
     for (const date of validDates) {
       if (chunkIndex >= sortedChunks.length) break;
 
       const dateKey = date.toDateString();
       
-      // Check if this date already has 2 courses
-      if (courseSessionsByDate[dateKey] && courseSessionsByDate[dateKey].length >= 2) {
+      // Check if this date already has 2 courses (limit to prevent overload)
+      // Only apply this constraint if we have multiple courses
+      if (coursesWithChunks.length > 1 && courseSessionsByDate[dateKey] && courseSessionsByDate[dateKey].length >= 2) {
         continue; // Skip this date, try next one
       }
 
@@ -209,7 +357,10 @@ export function generateIntelligentSchedules(params: IntelligentGenerateParams):
       // Add chunks until we reach the time limit
       while (chunkIndex < sortedChunks.length && sessionTime < adjustedMaxTime) {
         const chunk = sortedChunks[chunkIndex];
-        if (sessionTime + chunk.estimatedTime <= adjustedMaxTime) {
+        
+        // If this is the first chunk in the session, add it even if it exceeds the time limit
+        // to ensure all chunks get scheduled
+        if (sessionChunks.length === 0 || sessionTime + chunk.estimatedTime <= adjustedMaxTime) {
           sessionChunks.push(chunk);
           sessionTime += chunk.estimatedTime;
           chunkIndex++;
@@ -219,8 +370,9 @@ export function generateIntelligentSchedules(params: IntelligentGenerateParams):
       }
 
       if (sessionChunks.length > 0) {
+        sessionCount++;
         const session: StudySession = {
-          id: `intelligent-${sessionAutoId++}`,
+          id: `ai-session-${course.id}-${sessionCount}`,
           courseId: course.id,
           date: new Date(date),
           slides: sessionChunks.length, // Keep for backward compatibility
@@ -243,7 +395,20 @@ export function generateIntelligentSchedules(params: IntelligentGenerateParams):
 
         if (!sessionsByCourse[course.id]) sessionsByCourse[course.id] = [];
         sessionsByCourse[course.id].push(session);
+        
+        console.log(`  📝 Session ${sessionCount}: ${sessionChunks.length} chunks, ${sessionTime}min total`);
+        sessionChunks.forEach((chunk, i) => {
+          console.log(`    ${i + 1}. "${chunk.title}" (${chunk.estimatedTime}min)`);
+        });
       }
+    }
+    
+    console.log(`✅ Created ${sessionCount} sessions for "${course.name}" (${sortedChunks.length} chunks total)`);
+    
+    // If we still have remaining chunks after going through all dates, warn about it
+    if (chunkIndex < sortedChunks.length) {
+      const remainingCount = sortedChunks.length - chunkIndex;
+      console.log(`⚠️ Warning: ${remainingCount} chunks couldn't be scheduled for "${course.name}" due to date constraints`);
     }
   }
 
@@ -253,6 +418,8 @@ export function generateIntelligentSchedules(params: IntelligentGenerateParams):
   for (const id in sessionsByCourse) {
     sessionsByCourse[id].sort((a, b) => a.date.getTime() - b.date.getTime());
   }
+
+  console.log(`🎯 Generated ${allSessions.length} total sessions across ${coursesWithChunks.length} courses`);
 
   return { byCourse: sessionsByCourse, allSessions };
 }

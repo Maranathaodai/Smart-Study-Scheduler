@@ -238,7 +238,7 @@ export default function ChunkAdjustmentScreen() {
                   {chunk.content[0]?.content || 'No content available'}
                 </Text>
                 
-                {chunk.learningObjectives.length > 0 && (
+                {chunk.learningObjectives && chunk.learningObjectives.length > 0 && (
                   <View style={styles.objectivesPreview}>
                     <Text style={styles.objectivesLabel}>Objectives:</Text>
                     <Text style={styles.objectivesText}>
@@ -248,7 +248,7 @@ export default function ChunkAdjustmentScreen() {
                   </View>
                 )}
 
-                {chunk.keywords.length > 0 && (
+                {chunk.keywords && chunk.keywords.length > 0 && (
                   <View style={styles.keywordsPreview}>
                     {chunk.keywords.slice(0, 3).map((keyword, idx) => (
                       <View key={idx} style={styles.keywordTag}>
