@@ -6,7 +6,7 @@ echo "🔧 Setting up environment variables for Smart Study Scheduler..."
 # Create .env file
 cat > .env << EOF
 # Smart Study Scheduler Environment Variables
-EXPO_PUBLIC_OPENROUTER_API_KEY=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
+EXPO_PUBLIC_OPENROUTER_API_KEY=YOUR_OPENROUTER_API_KEY_HERE
 
 # Supabase Configuration (already configured in supabase.ts)
 # EXPO_PUBLIC_SUPABASE_URL=your_supabase_url_here

@@ -4,7 +4,7 @@ const axios = require('axios');
 async function testTopVisionModels() {
   console.log('🎯 Testing the BEST vision models found for PDF processing...\n');
   
-  const API_KEY = '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';
+  const API_KEY = 'YOUR_API_KEY_HERE';
   
   // Top 3 models that showed excellent results
   const topModels = [

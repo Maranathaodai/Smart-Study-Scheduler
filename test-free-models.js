@@ -29,7 +29,7 @@ const NEWER_MODELS = [
 async function testFreeModelsForText() {
   console.log('🔍 Testing truly FREE models for high-quality text processing...\n');
   
-  const API_KEY = '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';
+  const API_KEY = 'YOUR_API_KEY_HERE';
   const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
   
   const testContent = `# Machine Learning Fundamentals

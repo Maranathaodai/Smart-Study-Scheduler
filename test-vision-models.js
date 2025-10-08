@@ -35,7 +35,7 @@ const POTENTIAL_FREE_VISION_MODELS = [
 async function testVisionModels() {
   console.log('🔍 Testing free vision models for PDF/image processing...\n');
   
-  const API_KEY = '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';
+  const API_KEY = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY || 'YOUR_API_KEY_HERE';
   const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
   
   // Simple base64 test content (a small image)
