@@ -15,10 +15,10 @@ A React Native mobile application for organizing and scheduling study sessions w
 
 Before running this app, make sure you have the following installed:
 
-- Node.js (v16 or later)
-- npm or yarn
-- Expo CLI (`npm install -g @expo/cli`)
-- iOS Simulator (for iOS development) or Android Studio (for Android development)
+-- Node.js (v16 or later)
+-- npm or yarn
+-- Expo CLI (`npm install -g @expo/cli`)
+-- iOS Simulator (for iOS development) or Android Studio (for Android development)
 
 ## Installation
 
