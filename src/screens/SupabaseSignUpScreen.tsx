@@ -24,6 +24,8 @@ const SupabaseSignUpScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(false);
 
   const handleSignUp = async () => {
+    console.log('📩 Create Account pressed');
+
     if (!fullName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
@@ -35,16 +37,33 @@ const SupabaseSignUpScreen = ({ navigation }: any) => {
     }
 
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters long');
+      Alert.alert('Error', 'Password must be at least 6 characters long and include a number and a special character.');
+      return;
+    }
+
+    // Require at least one number and one special character for stronger security
+    const hasNumber = /\d/.test(password);
+    const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
+
+    if (!hasNumber || !hasSpecialChar) {
+      Alert.alert(
+        'Weak Password',
+        'Password must be at least 6 characters and include at least one number and one special character.'
+      );
       return;
     }
 
     setLoading(true);
     try {
+      console.log('📡 Calling signUp with:', {
+        email: email.trim(),
+        hasPassword: !!password,
+        hasFullName: !!fullName.trim(),
+      });
       await signUp(email.trim(), password, fullName.trim());
       Alert.alert(
         'Account Created!',
-        'Account Creation Successful',
+        'Your account has been created successfully.\n\nPlease log in with your new credentials.',
         [
           {
             text: 'OK',
@@ -103,6 +122,9 @@ const SupabaseSignUpScreen = ({ navigation }: any) => {
               onChangeText={setPassword}
               secureTextEntry
             />
+            <Text style={[styles.passwordHint, { color: colors.textSecondary }]}>
+              Password must be at least 6 characters and include a number and a special character.
+            </Text>
 
             <Input
               label="Confirm Password"
@@ -114,7 +136,11 @@ const SupabaseSignUpScreen = ({ navigation }: any) => {
 
             <Button
               title="Create Account"
-              onPress={handleSignUp}
+              onPress={() => {
+                // Extra log to guarantee we see button presses in the console
+                console.log('✅ Create Account button onPress fired');
+                handleSignUp();
+              }}
               loading={loading}
               style={styles.signUpButton}
             />
@@ -160,6 +186,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 32,
     textAlign: 'center',
+  },
+  passwordHint: {
+    fontSize: 12,
+    marginTop: 4,
+    marginBottom: 8,
   },
   form: {
     width: '100%',

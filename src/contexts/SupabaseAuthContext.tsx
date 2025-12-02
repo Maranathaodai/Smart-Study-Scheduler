@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, testSupabaseConnection } from '../lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -30,6 +30,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Quick connectivity check so we know if Supabase is reachable
+    testSupabaseConnection().catch((err) => {
+      console.error('Supabase connectivity check failed:', err);
+    });
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -110,22 +115,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       console.log('🚪 Signing out user...');
-      
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error('Signout error:', error);
-        throw new Error(error.message);
-      }
-      
-      console.log('✅ User signed out successfully');
-      
+
+      // Immediately clear local auth state so UI returns to login screen,
+      // regardless of what happens with the remote Supabase call.
       setUser(null);
       setSession(null);
-      
+
+      // Fire-and-forget Supabase sign-out in the background
+      supabase.auth.signOut()
+        .then(({ error }) => {
+          if (error) {
+            console.error('Signout error (background):', error);
+          } else {
+            console.log('✅ Supabase sign out completed in background');
+          }
+        })
+        .catch((err) => {
+          console.error('Logout failed (background):', err);
+        });
+
     } catch (error: any) {
-      console.error('Logout failed:', error);
-      throw error;
+      console.error('Logout wrapper failed:', error);
+      // Still ensure UI goes back to login
+      setUser(null);
+      setSession(null);
     }
   };
 

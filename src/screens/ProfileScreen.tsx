@@ -39,42 +39,15 @@ export default function ProfileScreen({ navigation }: any) {
 
   console.log('ProfileScreen user data:', supabaseUser);
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Logout', 
-          style: 'destructive', 
-          onPress: async () => {
-            try {
-              console.log('🚪 User initiated logout...');
-              await signOut();
-              console.log('✅ Logout completed, auth context will handle navigation');
-              // No need to manually navigate - the auth context will automatically 
-              // show the AuthNavigator when user becomes null
-            } catch (error: any) {
-              console.error('Logout error:', error);
-              
-              // Provide more specific error messages
-              let errorMessage = 'Failed to logout. Please try again.';
-              
-              if (error.message.includes('network')) {
-                errorMessage = 'Network error during logout. Please check your connection and try again.';
-              } else if (error.message.includes('session')) {
-                errorMessage = 'Session expired. You will be logged out automatically.';
-                // For session issues, the auth context will handle the navigation automatically
-                return;
-              }
-              
-              Alert.alert('Logout Error', errorMessage);
-            }
-          }
-        },
-      ]
-    );
+  const handleLogout = async () => {
+    try {
+      console.log('🔘 Logout button pressed on ProfileScreen');
+      await signOut();
+      console.log('✅ signOut finished; auth state cleared and login screen should render');
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      Alert.alert('Logout Error', 'Failed to logout. Please try again.');
+    }
   };
 
   const handleBioEdit = () => {
@@ -289,6 +262,16 @@ export default function ProfileScreen({ navigation }: any) {
     logoutButton: {
       marginTop: 24,
       borderColor: colors.error,
+      borderWidth: 1,
+      borderRadius: 999,
+      paddingVertical: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    logoutText: {
+      color: colors.primary,
+      fontSize: 16,
+      fontWeight: '600',
     },
     bioHeader: {
       flexDirection: 'row',
@@ -579,13 +562,14 @@ export default function ProfileScreen({ navigation }: any) {
           </CardContent>
         </Card>
 
-        {/* Logout Button */}
-        <Button
-          title="Logout"
+        {/* Logout Button - direct, no extra alerts or wrappers */}
+        <TouchableOpacity
           onPress={handleLogout}
-          variant="outline"
           style={dynamicStyles.logoutButton}
-        />
+          activeOpacity={0.7}
+        >
+          <Text style={dynamicStyles.logoutText}>Logout</Text>
+        </TouchableOpacity>
 
         {/* Meet the Developer */}
         <Card style={dynamicStyles.developerCard}>
